@@ -108,11 +108,6 @@
         button.action-btn:hover {
             background-color: var(--accent-hover);
         }
-        button.action-btn:disabled {
-            background-color: #444;
-            color: #888;
-            cursor: not-allowed;
-        }
         .secondary-btn {
             background-color: #333;
             color: #fff;
@@ -192,17 +187,16 @@
         
         .match-card {
             background: var(--bg-element);
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
             border: 1px solid #333;
-            position: relative;
         }
         .match-header {
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             color: #aaa;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             text-transform: uppercase;
             font-weight: bold;
         }
@@ -214,20 +208,31 @@
         .team-name {
             font-weight: bold;
             flex: 1;
-            text-align: center;
-            font-size: 13px;
-            word-break: break-word;
+            text-align: left;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background: #252b33;
+            padding: 4px 6px;
+            border-radius: 4px;
+        }
+        .score-box-container {
+            display: flex;
+            gap: 2px;
+            margin: 0 6px;
         }
         .score-box {
             background: #2d2d2d;
-            padding: 6px 14px;
-            border-radius: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 13px;
             cursor: pointer;
-            letter-spacing: 2px;
             color: var(--accent-color);
             border: 1px solid #444;
+            min-width: 18px;
+            text-align: center;
         }
         .score-box:hover {
             border-color: var(--accent-color);
@@ -293,19 +298,14 @@
             padding-bottom: 8px;
         }
 
-        .bracket-container {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .bracket-match {
-            background: var(--bg-element);
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--accent-color);
-            font-size: 13px;
+        .bracket-round-title {
+            color: var(--accent-color);
+            font-size: 14px;
+            font-weight: bold;
+            margin: 15px 0 10px 0;
+            text-align: center;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 4px;
         }
     </style>
 </head>
@@ -363,9 +363,12 @@
     </div>
 
     <div id="bracket-section" class="section">
-        <h2>Knockout Stage</h2>
-        <button id="generate-bracket-btn" class="action-btn" onclick="generateBracket()" disabled>Generate Bracket (All matches must be finished)</button>
-        <div class="bracket-container" id="bracket-container" style="margin-top:20px;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2 style="margin: 0; flex: 1; text-align: center;">Knockout Stage</h2>
+            <button class="action-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openBracketSS()">Screenshot View</button>
+        </div>
+        <button class="action-btn" onclick="generateBracket()" style="margin-bottom: 15px;">Generate / Reset Bracket</button>
+        <div id="bracket-container"></div>
     </div>
 </div>
 
@@ -396,6 +399,14 @@
         <button class="action-btn" style="width:auto; margin:0; padding:6px 12px; font-size:11px; background:#e91e63; color:white;" onclick="closeMatchesSS()">Close</button>
     </div>
     <div id="ss-matches-content"></div>
+</div>
+
+<div id="bracketSSModal" class="ss-fullscreen-modal">
+    <div class="ss-header">
+        <h3 style="margin:0; color:var(--accent-color); font-size:16px;">Knockout Bracket</h3>
+        <button class="action-btn" style="width:auto; margin:0; padding:6px 12px; font-size:11px; background:#e91e63; color:white;" onclick="closeBracketSS()">Close</button>
+    </div>
+    <div id="ss-bracket-content"></div>
 </div>
 
 <script>
@@ -443,7 +454,7 @@
             }
         });
         if(tabName === 'bracket') {
-            checkBracketReady();
+            renderBracket();
         }
         if (save) {
             localStorage.setItem('fc_active_tab', tabName);
@@ -453,7 +464,7 @@
     function createNewTournament() {
         let name = document.getElementById("new-tournament-name").value.trim();
         if (!name || allTournaments[name]) { alert("Invalid or existing name!"); return; }
-        allTournaments[name] = { players: [], groups: {}, matches: {} };
+        allTournaments[name] = { players: [], groups: {}, matches: {}, knockout: null };
         saveToLocalStorage();
         selectTournament(name);
         
@@ -519,7 +530,7 @@
         let t = allTournaments[currentTournamentId];
         document.getElementById("players-input").value = t.players.join("\n");
         renderGroupsPreview(); renderStandings(); renderMatches();
-        checkBracketReady();
+        renderBracket();
     }
 
     function savePlayers() {
@@ -534,7 +545,7 @@
         let t = allTournaments[currentTournamentId];
         let shuffled = [...t.players].sort(() => Math.random() - 0.5);
         let groups = ['A','B','C','D','E','F','G','H'];
-        t.groups = {}; t.matches = {};
+        t.groups = {}; t.matches = {}; t.knockout = null;
         groups.forEach((g, i) => {
             t.groups[g] = shuffled.slice(i*4, (i+1)*4).map(name => ({
                 name, played:0, won:0, drawn:0, lost:0, gf:0, ga:0, points:0
@@ -658,7 +669,7 @@
                         <div class="match-content">
                             <div class="team-name">${name1}</div>
                             <div class="score-box" onclick="openModal('${g}', ${mIdx}, 1)">${score1Display}</div>
-                            <div class="team-name">${name2}</div>
+                            <div class="team-name" style="text-align:right;">${name2}</div>
                         </div>
                         <div style="text-align:center;"><span class="status-badge" style="background:${bg1}; color:${color1};">${m.status1}</span></div>
                     </div>`;
@@ -669,7 +680,7 @@
                         <div class="match-content">
                             <div class="team-name">${name2}</div>
                             <div class="score-box" onclick="openModal('${g}', ${mIdx}, 2)">${score2Display}</div>
-                            <div class="team-name">${name1}</div>
+                            <div class="team-name" style="text-align:right;">${name1}</div>
                         </div>
                         <div style="text-align:center;"><span class="status-badge" style="background:${bg2}; color:${color1};">${m.status2}</span></div>
                     </div>`;
@@ -761,8 +772,184 @@
         document.getElementById("matchesSSModal").style.display = "none";
     }
 
+    // Bracket logic & rendering
+    function generateBracket() {
+        let t = allTournaments[currentTournamentId];
+        if(!t || !t.groups || Object.keys(t.groups).length === 0) {
+            alert("No groups found!");
+            return;
+        }
+
+        let getTop2 = (gKey) => {
+            let sorted = [...t.groups[gKey]].sort((a,b) => {
+                if(b.points !== a.points) return b.points - a.points;
+                let gdB = (b.gf - b.ga);
+                let gdA = (a.gf - a.ga);
+                if(gdB !== gdA) return gdB - gdA;
+                return b.gf - a.gf;
+            });
+            return [sorted[0].name, sorted[1].name];
+        };
+
+        let gA = getTop2('A'), gB = getTop2('B');
+        let gC = getTop2('C'), gD = getTop2('D');
+        let gE = getTop2('E'), gF = getTop2('F');
+        let gG = getTop2('G'), gH = getTop2('H');
+
+        // Initialize knockout structure if not present or regenerate
+        t.knockout = {
+            r16: [
+                { p1: gA[0], p2: gB[1], h1:"", a1:"", h2:"", a2:"" },
+                { p1: gC[0], p2: gD[1], h1:"", a1:"", h2:"", a2:"" },
+                { p1: gE[0], p2: gF[1], h1:"", a1:"", h2:"", a2:"" },
+                { p1: gG[0], p2: gH[1], h1:"", a1:"", h2:"", a2:"" },
+                { p1: gB[0], p2: gA[1], h1:"", a1:"", h2:"", a2:"" },
+                { p1: gD[0], p2: gC[1], h1:"", a1:"", h2:"", a2:"" },
+                { p1: gF[0], p2: gE[1], h1:"", a1:"", h2:"", a2:"" },
+                { p1: gH[0], p2: gG[1], h1:"", a1:"", h2:"", a2:"" }
+            ],
+            qf: [
+                { p1: "TBD", p2: "TBD", h1:"", a1:"", h2:"", a2:"" },
+                { p1: "TBD", p2: "TBD", h1:"", a1:"", h2:"", a2:"" },
+                { p1: "TBD", p2: "TBD", h1:"", a1:"", h2:"", a2:"" },
+                { p1: "TBD", p2: "TBD", h1:"", a1:"", h2:"", a2:"" }
+            ],
+            sf: [
+                { p1: "TBD", p2: "TBD", h1:"", a1:"", h2:"", a2:"" },
+                { p1: "TBD", p2: "TBD", h1:"", a1:"", h2:"", a2:"" }
+            ],
+            final: [
+                { p1: "TBD", p2: "TBD", h1:"", a1:"", h2:"", a2:"" }
+            ]
+        };
+
+        saveToLocalStorage();
+        renderBracket();
+    }
+
+    function updateBracketProgression() {
+        let t = allTournaments[currentTournamentId];
+        if(!t || !t.knockout) return;
+
+        let getWinner = (m) => {
+            if(m.h1 === "" || m.a1 === "" || m.h2 === "" || m.a2 === "") return "TBD";
+            let agg1 = Number(m.h1) + Number(m.a2); // p1 home in leg 1, away in leg 2? Or standard h1/a1 & h2/a2
+            // Let's assume h1,a1 is leg 1 (p1 home, p2 away) and h2,a2 is leg 2 (p2 home, p1 away).
+            // Total goals for p1 = m.h1 + m.a2; Total goals for p2 = m.a1 + m.h2;
+            let p1Total = Number(m.h1) + Number(m.a2);
+            let p2Total = Number(m.a1) + Number(m.h2);
+            if(p1Total > p2Total) return m.p1;
+            if(p2Total > p1Total) return m.p2;
+            return m.p1; // fallback if tied
+        };
+
+        // QF pairings from R16
+        // QF #1: winner R16 #1 vs winner R16 #2
+        t.knockout.qf[0].p1 = getWinner(t.knockout.r16[0]);
+        t.knockout.qf[0].p2 = getWinner(t.knockout.r16[1]);
+
+        // QF #2: winner R16 #3 vs winner R16 #4
+        t.knockout.qf[1].p1 = getWinner(t.knockout.r16[2]);
+        t.knockout.qf[1].p2 = getWinner(t.knockout.r16[3]);
+
+        // QF #3: winner R16 #5 vs winner R16 #6
+        t.knockout.qf[2].p1 = getWinner(t.knockout.r16[4]);
+        t.knockout.qf[2].p2 = getWinner(t.knockout.r16[5]);
+
+        // QF #4: winner R16 #7 vs winner R16 #8
+        t.knockout.qf[3].p1 = getWinner(t.knockout.r16[6]);
+        t.knockout.qf[3].p2 = getWinner(t.knockout.r16[7]);
+
+        // SF pairings from QF
+        t.knockout.sf[0].p1 = getWinner(t.knockout.qf[0]);
+        t.knockout.sf[0].p2 = getWinner(t.knockout.qf[1]);
+
+        t.knockout.sf[1].p1 = getWinner(t.knockout.qf[2]);
+        t.knockout.sf[1].p2 = getWinner(t.knockout.qf[3]);
+
+        // Final from SF
+        t.knockout.final[0].p1 = getWinner(t.knockout.sf[0]);
+        t.knockout.final[0].p2 = getWinner(t.knockout.sf[1]);
+    }
+
+    function renderBracket() {
+        let container = document.getElementById("bracket-container");
+        if(!container) return;
+        let t = allTournaments[currentTournamentId];
+        if(!t || !t.knockout) {
+            container.innerHTML = "<p style='color:#888; text-align:center;'>Click 'Generate / Reset Bracket' above to start knockout stage.</p>";
+            return;
+        }
+
+        updateBracketProgression();
+        saveToLocalStorage();
+
+        container.innerHTML = buildBracketHtml(t.knockout);
+    }
+
+    function buildBracketHtml(ko) {
+        let html = `<div class="bracket-round-title">Round of 16</div>`;
+        ko.r16.forEach((m, idx) => {
+            html += renderMatchCardHtml('r16', idx, m, `Round of 16 #${idx+1}`);
+        });
+
+        html += `<div class="bracket-round-title">Quarter Finals</div>`;
+        ko.qf.forEach((m, idx) => {
+            html += renderMatchCardHtml('qf', idx, m, `Quarter Finals #${idx+1}`);
+        });
+
+        html += `<div class="bracket-round-title">Semi Finals</div>`;
+        ko.sf.forEach((m, idx) => {
+            html += renderMatchCardHtml('sf', idx, m, `Semi Finals #${idx+1}`);
+        });
+
+        html += `<div class="bracket-round-title">Final</div>`;
+        ko.final.forEach((m, idx) => {
+            html += renderMatchCardHtml('final', idx, m, `Final`);
+        });
+
+        return html;
+    }
+
+    function renderMatchCardHtml(roundKey, index, m, title) {
+        let s1Leg1 = (m.h1 !== "" && m.a1 !== "") ? m.h1 : "-";
+        let s2Leg1 = (m.h1 !== "" && m.a1 !== "") ? m.a1 : "-";
+        let s1Leg2 = (m.h2 !== "" && m.a2 !== "") ? m.h2 : "-";
+        let s2Leg2 = (m.h2 !== "" && m.a2 !== "") ? m.a2 : "-";
+
+        return `
+        <div class="match-card">
+            <div class="match-header">${title}</div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="team-name">${m.p1}</div>
+                    <div class="score-box-container">
+                        <div class="score-box" onclick="openKnockoutModal('${roundKey}', ${index}, 1, 'h')">${s1Leg1}</div>
+                        <div class="score-box" onclick="openKnockoutModal('${roundKey}', ${index}, 2, 'h')">${s1Leg2}</div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="team-name">${m.p2}</div>
+                    <div class="score-box-container">
+                        <div class="score-box" onclick="openKnockoutModal('${roundKey}', ${index}, 1, 'a')">${s2Leg1}</div>
+                        <div class="score-box" onclick="openKnockoutModal('${roundKey}', ${index}, 2, 'a')">${s2Leg2}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    function openKnockoutModal(roundKey, index, leg, teamType) {
+        currentEditingMatch = { type: 'knockout', roundKey, index, leg };
+        let m = allTournaments[currentTournamentId].knockout[roundKey][index];
+        
+        document.getElementById('modalH').value = leg === 1 ? m.h1 : m.h2;
+        document.getElementById('modalA').value = leg === 1 ? m.a1 : m.a2;
+        document.getElementById('scoreModal').style.display = 'flex';
+    }
+
     function openModal(group, matchIndex, leg) {
-        currentEditingMatch = { group, matchIndex, leg };
+        currentEditingMatch = { type: 'group', group, matchIndex, leg };
         let m = allTournaments[currentTournamentId].matches[group][matchIndex];
         
         document.getElementById('modalH').value = leg === 1 ? m.h1 : m.h2;
@@ -785,25 +972,56 @@
             return;
         }
 
-        let { group, matchIndex, leg } = currentEditingMatch;
-        let m = allTournaments[currentTournamentId].matches[group][matchIndex];
+        if (currentEditingMatch.type === 'group') {
+            let { group, matchIndex, leg } = currentEditingMatch;
+            let m = allTournaments[currentTournamentId].matches[group][matchIndex];
 
-        if (leg === 1) {
-            m.h1 = parseInt(hVal);
-            m.a1 = parseInt(aVal);
-            m.status1 = "Finished";
-        } else {
-            m.h2 = parseInt(hVal);
-            m.a2 = parseInt(aVal);
-            m.status2 = "Finished";
+            if (leg === 1) {
+                m.h1 = parseInt(hVal);
+                m.a1 = parseInt(aVal);
+                m.status1 = "Finished";
+            } else {
+                m.h2 = parseInt(hVal);
+                m.a2 = parseInt(aVal);
+                m.status2 = "Finished";
+            }
+
+            recalculate(group);
+            saveToLocalStorage();
+            closeModal();
+            renderStandings();
+            renderMatches();
+        } else if (currentEditingMatch.type === 'knockout') {
+            let { roundKey, index, leg } = currentEditingMatch;
+            let m = allTournaments[currentTournamentId].knockout[roundKey][index];
+
+            if (leg === 1) {
+                m.h1 = parseInt(hVal);
+                m.a1 = parseInt(aVal);
+            } else {
+                m.h2 = parseInt(hVal);
+                m.a2 = parseInt(aVal);
+            }
+
+            saveToLocalStorage();
+            closeModal();
+            renderBracket();
         }
+    }
 
-        recalculate(group);
-        saveToLocalStorage();
-        closeModal();
-        renderStandings();
-        renderMatches();
-        checkBracketReady();
+    function openBracketSS() {
+        let container = document.getElementById("ss-bracket-content");
+        let t = allTournaments[currentTournamentId];
+        if(!t || !t.knockout) {
+            container.innerHTML = "<p style='color:#888; text-align:center;'>No bracket generated yet.</p>";
+        } else {
+            container.innerHTML = buildBracketHtml(t.knockout);
+        }
+        document.getElementById("bracketSSModal").style.display = "block";
+    }
+
+    function closeBracketSS() {
+        document.getElementById("bracketSSModal").style.display = "none";
     }
 
     function recalculate(g) {
@@ -835,41 +1053,6 @@
                 else { p2.drawn++; p1.drawn++; p2.points++; p1.points++; }
             }
         });
-    }
-
-    function checkBracketReady() {
-        let t = allTournaments[currentTournamentId];
-        let btn = document.getElementById("generate-bracket-btn");
-        if(!t || !t.matches || Object.keys(t.matches).length === 0) {
-            if(btn) btn.disabled = true;
-            return;
-        }
-
-        let allFinished = true;
-        Object.keys(t.matches).forEach(g => {
-            t.matches[g].forEach(m => {
-                if(m.status1 !== "Finished" || m.status2 !== "Finished") {
-                    allFinished = false;
-                }
-            });
-        });
-
-        if(btn) {
-            btn.disabled = !allFinished;
-            btn.innerText = allFinished ? "Generate Bracket" : "Generate Bracket (All matches must be finished)";
-        }
-    }
-
-    function generateBracket() {
-        let t = allTournaments[currentTournamentId];
-        let groups = Object.keys(t.groups);
-        let html = "<h3>Round of 16</h3>";
-        for(let i=0; i<groups.length; i+=2) {
-            let p1 = t.groups[groups[i]].sort((a,b)=>b.points-a.points)[0].name;
-            let p2 = t.groups[groups[i+1]].sort((a,b)=>b.points-a.points)[1].name;
-            html += `<div class="bracket-match"><b>${p1}</b> vs <b>${p2}</b></div>`;
-        }
-        document.getElementById("bracket-container").innerHTML = html;
     }
 
     initApp();
