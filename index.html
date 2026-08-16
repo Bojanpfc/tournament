@@ -160,25 +160,42 @@
             background: #00ffcc;
             color: #121212;
         }
-        .compact-match {
-            display: grid;
-            grid-template-columns: 2.5fr 45px 45px 2.5fr 45px;
-            gap: 5px;
-            align-items: center;
+        .match-card-stacked {
             background: #252525;
-            padding: 8px;
+            padding: 10px;
             border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 13px;
+            margin-bottom: 10px;
+            border: 1px solid #333;
         }
-        .compact-match select {
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .team-name {
+            font-weight: bold;
+            font-size: 14px;
+            word-break: break-word;
+            max-width: 65%;
+        }
+        .match-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px solid #333;
+            font-size: 12px;
+            color: #aaa;
+        }
+        select {
             background: #333;
             color: #fff;
             border: 1px solid #555;
             padding: 4px;
             border-radius: 4px;
             text-align: center;
-            width: 100%;
         }
         .bracket-container {
             display: flex;
@@ -277,7 +294,7 @@
 <script>
     let allTournaments = JSON.parse(localStorage.getItem('fc_tournaments') || '{}');
     let currentTournamentId = localStorage.getItem('fc_active_tournament') || null;
-    let activeRounds = {}; // Pamti izabranu rundu po grupama (npr. activeRounds['A'] = 0)
+    let activeRounds = {};
 
     function initApp() {
         renderTournamentsList();
@@ -462,19 +479,18 @@
                 ga: 0
             }));
 
-            // 3 runde (u svakoj rundi 2 meča, svaki meč ima Home i Away rezultate)
-            // m.s1 = Home golovi 1. igrača, m.s2 = Away golovi 1. igrača (ili obrnuto shodno logici)
             let pairs = [
-                [0,1], [2,3], // R1: Meč 1 i Meč 2
-                [0,2], [1,3], // R2: Meč 3 i Meč 4
-                [0,3], [1,2]  // R3: Meč 5 i Meč 6
+                [0,1], [2,3],
+                [0,2], [1,3],
+                [0,3], [1,2]
             ];
 
             t.matches[gName] = pairs.map(p => ({
                 p1: p[0], 
                 p2: p[1], 
-                h1: "", h2: "", // Home rezultat (1. meč)
-                a1: "", a2: ""  // Away rezultat (2. meč - revanš)
+                h1: "", h2: "",
+                a1: "", a2: "",
+                status: "Pending" // "Pending" ili "Finished"
             }));
             
             activeRounds[gName] = 0;
@@ -569,10 +585,9 @@
             card.style.marginBottom = "15px";
 
             let currentR = activeRounds[g] !== undefined ? activeRounds[g] : 0;
-
             let html = `<h3>Group ${g}</h3>`;
             
-            // Round tabs (R1, R2, R3)
+            // Round tabs
             html += `<div class="round-tabs">`;
             for (let r = 0; r < 3; r++) {
                 let activeClass = currentR === r ? "active" : "";
@@ -580,23 +595,47 @@
             }
             html += `</div>`;
 
-            // Prikaz 2 meča za izabranu rundu
+            // 2 matches per round
             for (let i = 0; i < 2; i++) {
                 let mIdx = (currentR * 2) + i;
                 let m = t.matches[g][mIdx];
                 let p1Name = t.groups[g][m.p1].name;
                 let p2Name = t.groups[g][m.p2].name;
+                let isFinished = m.status === "Finished";
+                let disabledAttr = isFinished ? "disabled" : "";
 
                 html += `
-                    <div class="compact-match">
-                        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:bold;">${p1Name}</div>
-                        <div><select id="h1_${g}_${mIdx}" onchange="tempStoreScore('${g}', ${mIdx}, 'h1', this.value)">${generateOptions(m.h1)}</select></div>
-                        <div><select id="h2_${g}_${mIdx}" onchange="tempStoreScore('${g}', ${mIdx}, 'h2', this.value)">${generateOptions(m.h2)}</select></div>
-                        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; font-weight:bold;">${p2Name}</div>
-                        <div><button class="action-btn" style="margin-top:0; padding:5px; font-size:12px;" onclick="confirmMatch('${g}', ${mIdx})">OK</button></div>
-                    </div>
-                    <div style="font-size:11px; color:#aaa; margin-bottom: 6px; text-align:center;">
-                        <span>Home & Away (1. meč i Revanš)</span>
+                    <div class="match-card-stacked">
+                        <!-- Player 1 row -->
+                        <div class="team-row">
+                            <span class="team-name">${p1Name}</span>
+                            <div style="display: flex; gap: 8px;">
+                                <span style="font-size:11px; color:#888; align-self:center;">H:</span>
+                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'h1', this.value)">${generateOptions(m.h1)}</select>
+                                <span style="font-size:11px; color:#888; align-self:center;">A:</span>
+                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'a1', this.value)">${generateOptions(m.a1)}</select>
+                            </div>
+                        </div>
+                        <!-- Player 2 row -->
+                        <div class="team-row">
+                            <span class="team-name">${p2Name}</span>
+                            <div style="display: flex; gap: 8px;">
+                                <span style="font-size:11px; color:#888; align-self:center;">H:</span>
+                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'h2', this.value)">${generateOptions(m.h2)}</select>
+                                <span style="font-size:11px; color:#888; align-self:center;">A:</span>
+                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'a2', this.value)">${generateOptions(m.a2)}</select>
+                            </div>
+                        </div>
+                        <!-- Controls: Status dropdown (Pending/Finished) -->
+                        <div class="match-controls">
+                            <span>Leg 1 & Leg 2</span>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                <select style="padding:2px 6px; font-size:12px;" onchange="updateMatchStatus('${g}', ${mIdx}, this.value)">
+                                    <option value="Pending" ${!isFinished ? 'selected' : ''}>Edit / Pending</option>
+                                    <option value="Finished" ${isFinished ? 'selected' : ''}>Finished</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>`;
             }
 
@@ -625,20 +664,25 @@
         saveToLocalStorage();
     }
 
-    function confirmMatch(group, matchIndex) {
+    function updateMatchStatus(group, matchIndex, status) {
         let t = allTournaments[currentTournamentId];
         let m = t.matches[group][matchIndex];
 
-        // Proveravamo da li su uneti rezultati za oba meča (Home i Away)
-        if (m.h1 === "" || m.h2 === "") {
-            alert("Please select scores for both matches before confirming!");
-            return;
+        if (status === "Finished") {
+            if (m.h1 === "" || m.h2 === "" || m.a1 === "" || m.a2 === "") {
+                alert("Please fill in all scores before setting to Finished!");
+                renderMatches(); // Vraća na staru opciju
+                return;
+            }
+            m.status = "Finished";
+        } else {
+            m.status = "Pending";
         }
 
         recalculateGroup(group);
         saveToLocalStorage();
         renderStandings();
-        alert("Match score confirmed successfully!");
+        renderMatches();
     }
 
     function recalculateGroup(group) {
@@ -651,35 +695,33 @@
         });
 
         t.matches[group].forEach(m => {
-            if (m.h1 !== "" && m.h2 !== "") {
+            if (m.status === "Finished") {
                 let p1 = t.groups[group][m.p1];
                 let p2 = t.groups[group][m.p2];
 
-                // Računamo obe utakmice (Home & Away) unutar jednog unosa
-                // Pretpostavka: h1/h2 su golovi iz prve, a možemo dodati i logiku za revanš ako odvojimo polja
-                // Trenutno mapiramo h1 i h2 kao dva meča (ili zbir dvomeča zavisno od unosa)
-                // Prilagođeno za dva polja: h1 (prvi meč rezultat igrača 1 i 2) i h2 (revanš rezultat)
-                
-                // Utakmica 1 (Home)
+                // Meč 1 (Player 1 Home vs Player 2 Away)
                 p1.played++;
                 p2.played++;
-                
-                // Pretpostavka unosa: h1 je golovi igrača 1, h2 je golovi igrača 2 u prvom meču
-                // Za jednostavnost dvomeča gde su h1 i h2 zapravo rezultat prvog meča, a dodajemo i revanš polja ako zatreba
-                // Ovde tretiramo h1 kao golove igrača 1, h2 kao golove igrača 2
                 p1.gf += m.h1;
                 p1.ga += m.h2;
                 p2.gf += m.h2;
                 p2.ga += m.h1;
 
-                if (m.h1 > m.h2) {
-                    p1.points += 3;
-                } else if (m.h1 < m.h2) {
-                    p2.points += 3;
-                } else {
-                    p1.points += 1;
-                    p2.points += 1;
-                }
+                if (m.h1 > m.h2) p1.points += 3;
+                else if (m.h1 < m.h2) p2.points += 3;
+                else { p1.points += 1; p2.points += 1; }
+
+                // Meč 2 (Player 2 Home vs Player 1 Away - revanš)
+                p1.played++;
+                p2.played++;
+                p1.gf += m.a1;
+                p1.ga += m.a2;
+                p2.gf += m.a2;
+                p2.ga += m.a1;
+
+                if (m.a1 > m.a2) p1.points += 3;
+                else if (m.a1 < m.a2) p2.points += 3;
+                else { p1.points += 1; p2.points += 1; }
             }
         });
     }
