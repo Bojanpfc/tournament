@@ -21,8 +21,9 @@
             margin: 0;
             padding: 10px;
         }
+        /* Promenjena boja glavnih naslova u nijansu bele */
         h1, h2, h3, h4 {
-            color: var(--accent-color);
+            color: #f0f0f0;
             text-align: center;
         }
         .group-title {
@@ -127,7 +128,7 @@
             gap: 15px;
         }
         
-        /* Nova šema tabela inspirisana slikom */
+        /* Tabela sa narandžastim pozicijama i bez plave pozadine redova */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -160,7 +161,7 @@
             color: #fff;
         }
         .pos-1 {
-            background-color: #f1c40f !important;
+            background-color: #f39c12 !important;
             color: #000 !important;
             font-weight: bold;
         }
@@ -173,12 +174,6 @@
             text-align: left;
             padding-left: 8px;
             font-weight: 500;
-        }
-        .row-qualified .club-cell {
-            background-color: #205c8c;
-        }
-        .row-qualified td {
-            background-color: #1b3d5a;
         }
 
         th:nth-child(1), td:nth-child(1) { width: 10%; } /* POS */
@@ -637,8 +632,7 @@
                     let gd = p.gf - p.ga;
                     let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
                     let posClass = idx === 0 ? 'pos-1' : (idx === 1 ? 'pos-2' : 'pos-cell');
-                    let rowClass = idx < 2 ? 'row-qualified' : '';
-                    return `<tr class="${rowClass}">
+                    return `<tr>
                         <td class="${posClass}">${idx + 1}</td>
                         <td class="club-cell">${p.name}</td>
                         <td>${p.played}</td>
@@ -1046,7 +1040,7 @@
                 
                 if(m.h2 > m.a2) { p2.won++; p1.lost++; p2.points += 3; }
                 else if(m.h2 < m.a2) { p1.won++; p2.lost++; p1.points += 3; }
-                else { p2.drawn++; p1.drawn++; p2.points++; p1.points++; }
+                else { p2.drawn++; p1.drawn++; p2.points++; p2.points++; }
             }
         });
     }
