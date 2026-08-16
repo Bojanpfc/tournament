@@ -5,15 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FC Mobile Tournament Manager</title>
     <style>
+        :root {
+            --accent-color: #3bbfad;
+            --accent-hover: #319e91;
+            --bg-main: #121212;
+            --bg-card: #1e1e1e;
+            --bg-element: #252525;
+            --text-main: #e0e0e0;
+        }
         body {
             font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
+            background-color: var(--bg-main);
+            color: var(--text-main);
             margin: 0;
             padding: 10px;
         }
         h1, h2, h3, h4 {
-            color: #00ffcc;
+            color: var(--accent-color);
             text-align: center;
         }
         .container {
@@ -22,7 +30,7 @@
         }
         .active-tournament-banner {
             background: #22252a;
-            border: 1px solid #00ffcc;
+            border: 1px solid var(--accent-color);
             padding: 8px 12px;
             border-radius: 6px;
             margin-bottom: 15px;
@@ -32,7 +40,7 @@
         .nav-tabs {
             display: flex;
             justify-content: space-around;
-            background: #1e1e1e;
+            background: var(--bg-card);
             padding: 8px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -49,15 +57,15 @@
             white-space: nowrap;
         }
         .nav-tab.active {
-            color: #00ffcc;
-            border-bottom: 2px solid #00ffcc;
+            color: var(--accent-color);
+            border-bottom: 2px solid var(--accent-color);
         }
         .nav-tab.hidden {
             display: none;
         }
         .section {
             display: none;
-            background: #1e1e1e;
+            background: var(--bg-card);
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
@@ -81,7 +89,7 @@
             resize: vertical;
         }
         button.action-btn {
-            background-color: #00ffcc;
+            background-color: var(--accent-color);
             color: #121212;
             border: none;
             padding: 12px 20px;
@@ -94,14 +102,19 @@
             margin-top: 10px;
         }
         button.action-btn:hover {
-            background-color: #00b386;
+            background-color: var(--accent-hover);
+        }
+        button.action-btn:disabled {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
         }
         .secondary-btn {
             background-color: #333;
             color: #fff;
         }
         .tournament-item {
-            background: #252525;
+            background: var(--bg-element);
             padding: 12px;
             border-radius: 6px;
             margin-bottom: 10px;
@@ -115,7 +128,6 @@
             gap: 15px;
         }
         
-        /* Kompaktna tabela koja savršeno staje na mobilni ekran */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -133,17 +145,16 @@
         }
         th {
             background-color: #2d2d2d;
-            color: #00ffcc;
+            color: var(--accent-color);
             font-size: 11px;
         }
-        /* Širine kolona da sve stane bez skrolovanja */
-        th:nth-child(1), td:nth-child(1) { width: 34%; text-align: left; padding-left: 6px; } /* Player name */
-        th:nth-child(2), td:nth-child(2) { width: 8%; } /* P (Played) */
-        th:nth-child(3), td:nth-child(3) { width: 8%; } /* W (Won) */
-        th:nth-child(4), td:nth-child(4) { width: 8%; } /* D (Drawn) */
-        th:nth-child(5), td:nth-child(5) { width: 8%; } /* L (Lost) */
-        th:nth-child(6), td:nth-child(6) { width: 16%; } /* GD (Goal Diff) */
-        th:nth-child(7), td:nth-child(7) { width: 18%; font-weight: bold; color: #00ffcc; } /* Pts */
+        th:nth-child(1), td:nth-child(1) { width: 34%; text-align: left; padding-left: 6px; }
+        th:nth-child(2), td:nth-child(2) { width: 8%; }
+        th:nth-child(3), td:nth-child(3) { width: 8%; }
+        th:nth-child(4), td:nth-child(4) { width: 8%; }
+        th:nth-child(5), td:nth-child(5) { width: 8%; }
+        th:nth-child(6), td:nth-child(6) { width: 16%; }
+        th:nth-child(7), td:nth-child(7) { width: 18%; font-weight: bold; color: var(--accent-color); }
 
         .round-tabs {
             display: flex;
@@ -162,12 +173,12 @@
             font-size: 13px;
         }
         .round-btn.active {
-            background: #00ffcc;
+            background: var(--accent-color);
             color: #121212;
         }
         
         .match-card {
-            background: #252525;
+            background: var(--bg-element);
             padding: 12px;
             border-radius: 10px;
             margin-bottom: 12px;
@@ -202,11 +213,11 @@
             font-size: 16px;
             cursor: pointer;
             letter-spacing: 2px;
-            color: #00ffcc;
+            color: var(--accent-color);
             border: 1px solid #444;
         }
         .score-box:hover {
-            border-color: #00ffcc;
+            border-color: var(--accent-color);
         }
         .status-badge {
             font-size: 9px;
@@ -231,11 +242,11 @@
             z-index: 1000;
         }
         .modal-content {
-            background: #1e1e1e;
+            background: var(--bg-card);
             padding: 25px;
             border-radius: 12px;
             text-align: center;
-            border: 1px solid #00ffcc;
+            border: 1px solid var(--accent-color);
             width: 280px;
         }
         .modal-content input {
@@ -256,22 +267,71 @@
             gap: 20px;
         }
         .bracket-match {
-            background: #252525;
+            background: var(--bg-element);
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 10px;
-            border-left: 4px solid #00ffcc;
+            border-left: 4px solid var(--accent-color);
             font-size: 13px;
+        }
+
+        /* Screenshot Mode Stilovi */
+        body.screenshot-mode {
+            background: #0d0f12 !important;
+            padding: 5px !important;
+        }
+        body.screenshot-mode .nav-tabs,
+        body.screenshot-mode .active-tournament-banner,
+        body.screenshot-mode h1,
+        body.screenshot-mode .action-btn,
+        body.screenshot-mode .round-tabs,
+        body.screenshot-mode .status-badge,
+        body.screenshot-mode #screenshot-exit-btn {
+            display: none !important;
+        }
+        body.screenshot-mode .section {
+            display: block !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        body.screenshot-mode .match-card {
+            padding: 8px !important;
+            margin-bottom: 6px !important;
+            background: #181b20 !important;
+        }
+        body.screenshot-mode table {
+            font-size: 12px !important;
+        }
+        .floating-screenshot-exit {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            z-index: 2000;
+            cursor: pointer;
+        }
+        body.screenshot-mode .floating-screenshot-exit {
+            display: block;
         }
     </style>
 </head>
 <body>
 
+<button id="screenshot-exit-btn" class="floating-screenshot-exit" onclick="toggleScreenshotMode()">Exit Screenshot Mode</button>
+
 <div class="container">
     <h1>FC Mobile Tournament</h1>
 
     <div id="active-banner" class="active-tournament-banner">
-        Active Tournament: <b id="active-name-display" style="color: #00ffcc;">None selected</b>
+        Active Tournament: <b id="active-name-display" style="color: var(--accent-color);">None selected</b>
     </div>
 
     <div class="nav-tabs">
@@ -303,18 +363,24 @@
     </div>
 
     <div id="standings-section" class="section">
-        <h2>Group Standings</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2 style="margin: 0; flex: 1; text-align: center;">Group Standings</h2>
+            <button class="action-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleScreenshotMode()">Screenshot View</button>
+        </div>
         <div class="grid" id="standings-container"></div>
     </div>
 
     <div id="matches-section" class="section">
-        <h2>Group Matches</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2 style="margin: 0; flex: 1; text-align: center;">Group Matches</h2>
+            <button class="action-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleScreenshotMode()">Screenshot View</button>
+        </div>
         <div id="matches-container"></div>
     </div>
 
     <div id="bracket-section" class="section">
         <h2>Knockout Stage</h2>
-        <button class="action-btn" onclick="generateBracket()">Generate Bracket</button>
+        <button id="generate-bracket-btn" class="action-btn" onclick="generateBracket()" disabled>Generate Bracket (All matches must be finished)</button>
         <div class="bracket-container" id="bracket-container" style="margin-top:20px;"></div>
     </div>
 </div>
@@ -322,7 +388,7 @@
 <!-- Modal Pop-up za unos rezultata -->
 <div id="scoreModal" class="modal">
     <div class="modal-content">
-        <h3 style="color:#00ffcc; margin-top:0;">Set Result</h3>
+        <h3 style="color:var(--accent-color); margin-top:0;">Set Result</h3>
         <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin: 15px 0;">
             <input type="number" id="modalH" min="0" placeholder="0">
             <span style="font-size:20px; font-weight:bold;">:</span>
@@ -364,6 +430,13 @@
                 tab.classList.add('active');
             }
         });
+        if(tabName === 'bracket') {
+            checkBracketReady();
+        }
+    }
+
+    function toggleScreenshotMode() {
+        document.body.classList.toggle('screenshot-mode');
     }
 
     function createNewTournament() {
@@ -406,6 +479,7 @@
         let t = allTournaments[currentTournamentId];
         document.getElementById("players-input").value = t.players.join("\n");
         renderGroupsPreview(); renderStandings(); renderMatches();
+        checkBracketReady();
     }
 
     function savePlayers() {
@@ -448,7 +522,7 @@
         let container = document.getElementById("groups-draw-preview");
         if(!container) return;
         container.innerHTML = Object.keys(allTournaments[currentTournamentId].groups).map(g => `
-            <div style="background:#252525; padding:10px; border-radius:6px;">
+            <div style="background:var(--bg-element); padding:10px; border-radius:6px;">
                 <h3>Group ${g}</h3><ul>${allTournaments[currentTournamentId].groups[g].map(p => `<li>${p.name}</li>`).join("")}</ul>
             </div>`).join("");
     }
@@ -467,7 +541,7 @@
             });
 
             return `
-            <div style="background:#252525; padding:10px; border-radius:8px;">
+            <div style="background:var(--bg-element); padding:10px; border-radius:8px;">
                 <h3>Group ${g}</h3>
                 <table>
                     <tr>
@@ -489,7 +563,7 @@
                             <td>${p.drawn}</td>
                             <td>${p.lost}</td>
                             <td>${gdStr}</td>
-                            <td style="font-weight:bold; color:#00ffcc;">${p.points}</td>
+                            <td style="font-weight:bold; color:var(--accent-color);">${p.points}</td>
                         </tr>`;
                     }).join("")}
                 </table>
@@ -504,7 +578,7 @@
         let t = allTournaments[currentTournamentId];
         Object.keys(t.groups).forEach(g => {
             let card = document.createElement("div");
-            card.style.background = "#1e1e1e";
+            card.style.background = "var(--bg-card)";
             card.style.padding = "12px";
             card.style.borderRadius = "8px";
             card.style.marginBottom = "15px";
@@ -521,8 +595,9 @@
                 let score1Display = (m.h1 !== "" && m.a1 !== "") ? `${m.h1} : ${m.a1}` : "- : -";
                 let score2Display = (m.h2 !== "" && m.a2 !== "") ? `${m.h2} : ${m.a2}` : "- : -";
                 
-                let bg1 = m.status1 === "Finished" ? "#00ffcc" : "#e91e63";
-                let bg2 = m.status2 === "Finished" ? "#00ffcc" : "#e91e63";
+                let bg1 = m.status1 === "Finished" ? "var(--accent-color)" : "#e91e63";
+                let color1 = m.status1 === "Finished" ? "#121212" : "#white";
+                let bg2 = m.status2 === "Finished" ? "var(--accent-color)" : "#e91e63";
 
                 html += `
                     <div class="match-card">
@@ -532,7 +607,7 @@
                             <div class="score-box" onclick="openModal('${g}', ${mIdx}, 1)">${score1Display}</div>
                             <div class="team-name">${name2}</div>
                         </div>
-                        <div style="text-align:center;"><span class="status-badge" style="background:${bg1};">${m.status1}</span></div>
+                        <div style="text-align:center;"><span class="status-badge" style="background:${bg1}; color:${color1};">${m.status1}</span></div>
                     </div>`;
 
                 html += `
@@ -543,7 +618,7 @@
                             <div class="score-box" onclick="openModal('${g}', ${mIdx}, 2)">${score2Display}</div>
                             <div class="team-name">${name1}</div>
                         </div>
-                        <div style="text-align:center;"><span class="status-badge" style="background:${bg2};">${m.status2}</span></div>
+                        <div style="text-align:center;"><span class="status-badge" style="background:${bg2}; color:${color1};">${m.status2}</span></div>
                     </div>`;
             }
             card.innerHTML = html;
@@ -593,6 +668,7 @@
         closeModal();
         renderStandings();
         renderMatches();
+        checkBracketReady();
     }
 
     function recalculate(g) {
@@ -624,6 +700,29 @@
                 else { p2.drawn++; p1.drawn++; p2.points++; p1.points++; }
             }
         });
+    }
+
+    function checkBracketReady() {
+        let t = allTournaments[currentTournamentId];
+        let btn = document.getElementById("generate-bracket-btn");
+        if(!t || !t.matches || Object.keys(t.matches).length === 0) {
+            if(btn) btn.disabled = true;
+            return;
+        }
+
+        let allFinished = true;
+        Object.keys(t.matches).forEach(g => {
+            t.matches[g].forEach(m => {
+                if(m.status1 !== "Finished" || m.status2 !== "Finished") {
+                    allFinished = false;
+                }
+            });
+        });
+
+        if(btn) {
+            btn.disabled = !allFinished;
+            btn.innerText = allFinished ? "Generate Bracket" : "Generate Bracket (All matches must be finished)";
+        }
     }
 
     function generateBracket() {
