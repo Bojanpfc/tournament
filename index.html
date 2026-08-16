@@ -8,6 +8,7 @@
         :root {
             --accent-color: #3bbfad;
             --accent-hover: #319e91;
+            --group-color: #f39c12;
             --bg-main: #121212;
             --bg-card: #1e1e1e;
             --bg-element: #252525;
@@ -23,6 +24,10 @@
         h1, h2, h3, h4 {
             color: var(--accent-color);
             text-align: center;
+        }
+        /* Promenjena boja za nazive grupa */
+        .group-title {
+            color: var(--group-color) !important;
         }
         .container {
             max-width: 900px;
@@ -143,12 +148,23 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        /* Naglašeniji heder tabele */
         th {
-            background-color: #2d2d2d;
-            color: var(--accent-color);
+            background-color: #2c3e50;
+            color: #ffffff;
             font-size: 11px;
+            border-bottom: 2px solid var(--accent-color);
         }
-        th:nth-child(1), td:nth-child(1) { width: 34%; text-align: left; padding-left: 6px; }
+        /* Pozadina za imena igrača */
+        td.player-name-cell {
+            background-color: #252b33;
+            font-weight: bold;
+            text-align: left;
+            padding-left: 6px;
+            color: #fff;
+        }
+
+        th:nth-child(1), td:nth-child(1) { width: 34%; }
         th:nth-child(2), td:nth-child(2) { width: 8%; }
         th:nth-child(3), td:nth-child(3) { width: 8%; }
         th:nth-child(4), td:nth-child(4) { width: 8%; }
@@ -402,11 +418,15 @@
             loadTournamentDataToUI();
             document.getElementById("tab-setup").classList.add("hidden");
             document.getElementById("tab-draw").classList.add("hidden");
-            switchTab('standings');
+            
+            let savedTab = localStorage.getItem('fc_active_tab') || 'standings';
+            switchTab(savedTab, false);
+        } else {
+            switchTab('tournaments', false);
         }
     }
 
-    function switchTab(tabName) {
+    function switchTab(tabName, save = true) {
         if (tabName !== 'tournaments' && !currentTournamentId) { alert("Select a tournament first!"); return; }
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
         document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
@@ -422,6 +442,9 @@
         });
         if(tabName === 'bracket') {
             checkBracketReady();
+        }
+        if (save) {
+            localStorage.setItem('fc_active_tab', tabName);
         }
     }
 
@@ -509,7 +532,7 @@
         if(!container) return;
         container.innerHTML = Object.keys(allTournaments[currentTournamentId].groups).map(g => `
             <div style="background:var(--bg-element); padding:10px; border-radius:6px;">
-                <h3>Group ${g}</h3><ul>${allTournaments[currentTournamentId].groups[g].map(p => `<li>${p.name}</li>`).join("")}</ul>
+                <h3 class="group-title">Group ${g}</h3><ul>${allTournaments[currentTournamentId].groups[g].map(p => `<li>${p.name}</li>`).join("")}</ul>
             </div>`).join("");
     }
 
@@ -528,7 +551,7 @@
 
             return `
             <div style="background:var(--bg-element); padding:10px; border-radius:8px;">
-                <h3>Group ${g}</h3>
+                <h3 class="group-title">Group ${g}</h3>
                 <table>
                     <tr>
                         <th>Player</th>
@@ -543,7 +566,7 @@
                         let gd = p.gf - p.ga;
                         let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
                         return `<tr>
-                            <td>${p.name}</td>
+                            <td class="player-name-cell">${p.name}</td>
                             <td>${p.played}</td>
                             <td>${p.won}</td>
                             <td>${p.drawn}</td>
@@ -570,7 +593,7 @@
             card.style.marginBottom = "15px";
 
             let curR = activeRounds[g] || 0;
-            let html = `<h3>Group ${g}</h3><div class="round-tabs">${[0,1,2].map(r => `<button class="round-btn ${curR==r?'active':''}" onclick="activeRounds['${g}']= ${r}; renderMatches();">R${r+1}</button>`).join("")}</div>`;
+            let html = `<h3 class="group-title">Group ${g}</h3><div class="round-tabs">${[0,1,2].map(r => `<button class="round-btn ${curR==r?'active':''}" onclick="activeRounds['${g}']= ${r}; renderMatches();">R${r+1}</button>`).join("")}</div>`;
             
             for(let i=0; i<2; i++){
                 let mIdx = (curR*2)+i; 
@@ -627,15 +650,15 @@
             });
 
             return `
-            <div style="background:var(--bg-element); padding:6px; border-radius:6px; border-left:3px solid var(--accent-color); margin-bottom:6px;">
-                <h4 style="margin:2px 0 4px 0; color:var(--accent-color); font-size:13px; text-align:left; padding-left:4px;">Group ${g}</h4>
+            <div style="background:var(--bg-element); padding:6px; border-radius:6px; border-left:3px solid var(--group-color); margin-bottom:6px;">
+                <h4 class="group-title" style="margin:2px 0 4px 0; font-size:13px; text-align:left; padding-left:4px;">Group ${g}</h4>
                 <table style="font-size:10px;">
                     <tr><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>
                     ${sortedPlayers.map(p => {
                         let gd = p.gf - p.ga;
                         let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
                         return `<tr>
-                            <td style="background:#22252a; font-weight:bold;">${p.name}</td><td>${p.played}</td><td>${p.won}</td><td>${p.drawn}</td><td>${p.lost}</td><td>${gdStr}</td>
+                            <td class="player-name-cell">${p.name}</td><td>${p.played}</td><td>${p.won}</td><td>${p.drawn}</td><td>${p.lost}</td><td>${gdStr}</td>
                             <td style="font-weight:bold; color:var(--accent-color);">${p.points}</td>
                         </tr>`;
                     }).join("")}
@@ -658,25 +681,23 @@
         container.innerHTML = Object.keys(t.groups).map(g => {
             let groupMatchesHtml = '';
             
-            // Prolaz kroz sve mečeve u grupi (ukupno 6 mečeva)
             t.matches[g].forEach((m, mIdx) => {
                 let p1Name = t.groups[g][m.p1].name;
                 let p2Name = t.groups[g][m.p2].name;
                 let sLeg1 = (m.h1 !== "" && m.a1 !== "") ? `${m.h1}:${m.a1}` : "-:-";
                 let sLeg2 = (m.h2 !== "" && m.a2 !== "") ? `${m.h2}:${m.a2}` : "-:-";
-                let roundNum = Math.floor(mIdx / 2) + 1;
 
                 groupMatchesHtml += `
                 <div style="font-size:10px; background:#181b20; padding:4px 6px; border-radius:4px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="flex:1; text-align:right; font-weight:bold; background:#22252a; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p1Name}</span>
+                    <span style="flex:1; text-align:right; font-weight:bold; background:#252b33; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p1Name}</span>
                     <span style="background:#2d2d2d; padding:2px 6px; border-radius:3px; color:var(--accent-color); font-weight:bold; margin:0 4px; white-space:nowrap;">${sLeg1} | ${sLeg2}</span>
-                    <span style="flex:1; text-align:left; font-weight:bold; background:#22252a; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p2Name}</span>
+                    <span style="flex:1; text-align:left; font-weight:bold; background:#252b33; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p2Name}</span>
                 </div>`;
             });
 
             return `
-            <div style="background:var(--bg-element); padding:8px; border-radius:6px; border-left:3px solid var(--accent-color); margin-bottom:8px;">
-                <h4 style="margin:0 0 6px 0; color:var(--accent-color); font-size:12px; text-align:left; padding-left:2px;">Group ${g}</h4>
+            <div style="background:var(--bg-element); padding:8px; border-radius:6px; border-left:3px solid var(--group-color); margin-bottom:8px;">
+                <h4 class="group-title" style="margin:0 0 6px 0; font-size:12px; text-align:left; padding-left:2px;">Group ${g}</h4>
                 ${groupMatchesHtml}
             </div>`;
         }).join("");
