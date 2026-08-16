@@ -269,16 +269,16 @@
             background: #0d0f12;
             z-index: 3000;
             overflow-y: auto;
-            padding: 15px;
+            padding: 10px;
             box-sizing: border-box;
         }
         .ss-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--accent-color);
+            padding-bottom: 8px;
         }
 
         .bracket-container {
@@ -374,17 +374,17 @@
 <!-- Screenshot Modal za tabele -->
 <div id="standingsSSModal" class="ss-fullscreen-modal">
     <div class="ss-header">
-        <h3 style="margin:0; color:var(--accent-color);">Standings Overview</h3>
-        <button class="action-btn" style="width:auto; margin:0; padding:6px 14px; font-size:12px; background:#e91e63; color:white;" onclick="closeStandingsSS()">Close</button>
+        <h3 style="margin:0; color:var(--accent-color); font-size:16px;">Group Standings</h3>
+        <button class="action-btn" style="width:auto; margin:0; padding:6px 12px; font-size:11px; background:#e91e63; color:white;" onclick="closeStandingsSS()">Close</button>
     </div>
     <div id="ss-standings-content" class="grid"></div>
 </div>
 
-<!-- Screenshot Modal za mečeve (Runda 1 ili svi mečevi) -->
+<!-- Screenshot Modal za sve mečeve -->
 <div id="matchesSSModal" class="ss-fullscreen-modal">
     <div class="ss-header">
-        <h3 style="margin:0; color:var(--accent-color);">Round 1 Matches Overview</h3>
-        <button class="action-btn" style="width:auto; margin:0; padding:6px 14px; font-size:12px; background:#e91e63; color:white;" onclick="closeMatchesSS()">Close</button>
+        <h3 style="margin:0; color:var(--accent-color); font-size:16px;">All Group Matches</h3>
+        <button class="action-btn" style="width:auto; margin:0; padding:6px 12px; font-size:11px; background:#e91e63; color:white;" onclick="closeMatchesSS()">Close</button>
     </div>
     <div id="ss-matches-content"></div>
 </div>
@@ -627,15 +627,15 @@
             });
 
             return `
-            <div style="background:var(--bg-element); padding:8px; border-radius:6px; margin-bottom:10px;">
-                <h4 style="margin:4px 0; color:var(--accent-color);">Group ${g}</h4>
-                <table>
+            <div style="background:var(--bg-element); padding:6px; border-radius:6px; border-left:3px solid var(--accent-color); margin-bottom:6px;">
+                <h4 style="margin:2px 0 4px 0; color:var(--accent-color); font-size:13px; text-align:left; padding-left:4px;">Group ${g}</h4>
+                <table style="font-size:10px;">
                     <tr><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>
                     ${sortedPlayers.map(p => {
                         let gd = p.gf - p.ga;
                         let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
                         return `<tr>
-                            <td>${p.name}</td><td>${p.played}</td><td>${p.won}</td><td>${p.drawn}</td><td>${p.lost}</td><td>${gdStr}</td>
+                            <td style="background:#22252a; font-weight:bold;">${p.name}</td><td>${p.played}</td><td>${p.won}</td><td>${p.drawn}</td><td>${p.lost}</td><td>${gdStr}</td>
                             <td style="font-weight:bold; color:var(--accent-color);">${p.points}</td>
                         </tr>`;
                     }).join("")}
@@ -655,36 +655,29 @@
         let t = allTournaments[currentTournamentId];
         if(!t) return;
 
-        // Prikazuje mečeve runde 1 za sve grupe (indeks 0 i 1 u nizu mečeva su prvi mečevi prve runde)
         container.innerHTML = Object.keys(t.groups).map(g => {
-            let m1 = t.matches[g][0];
-            let m2 = t.matches[g][1];
+            let groupMatchesHtml = '';
             
-            let p1Name1 = t.groups[g][m1.p1].name;
-            let p1Name2 = t.groups[g][m1.p2].name;
-            let s1Leg1 = (m1.h1 !== "" && m1.a1 !== "") ? `${m1.h1}:${m1.a1}` : "-:-";
-            let s1Leg2 = (m1.h2 !== "" && m1.a2 !== "") ? `${m1.h2}:${m1.a2}` : "-:-";
+            // Prolaz kroz sve mečeve u grupi (ukupno 6 mečeva)
+            t.matches[g].forEach((m, mIdx) => {
+                let p1Name = t.groups[g][m.p1].name;
+                let p2Name = t.groups[g][m.p2].name;
+                let sLeg1 = (m.h1 !== "" && m.a1 !== "") ? `${m.h1}:${m.a1}` : "-:-";
+                let sLeg2 = (m.h2 !== "" && m.a2 !== "") ? `${m.h2}:${m.a2}` : "-:-";
+                let roundNum = Math.floor(mIdx / 2) + 1;
 
-            let p2Name1 = t.groups[g][m2.p1].name;
-            let p2Name2 = t.groups[g][m2.p2].name;
-            let s2Leg1 = (m2.h1 !== "" && m2.a1 !== "") ? `${m2.h1}:${m2.a1}` : "-:-";
-            let s2Leg2 = (m2.h2 !== "" && m2.a2 !== "") ? `${m2.h2}:${m2.a2}` : "-:-";
+                groupMatchesHtml += `
+                <div style="font-size:10px; background:#181b20; padding:4px 6px; border-radius:4px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="flex:1; text-align:right; font-weight:bold; background:#22252a; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p1Name}</span>
+                    <span style="background:#2d2d2d; padding:2px 6px; border-radius:3px; color:var(--accent-color); font-weight:bold; margin:0 4px; white-space:nowrap;">${sLeg1} | ${sLeg2}</span>
+                    <span style="flex:1; text-align:left; font-weight:bold; background:#22252a; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p2Name}</span>
+                </div>`;
+            });
 
             return `
-            <div style="background:var(--bg-element); padding:10px; border-radius:8px; margin-bottom:10px;">
-                <h4 style="margin:0 0 8px 0; color:var(--accent-color); text-align:center;">Group ${g} - Round 1</h4>
-                
-                <div style="font-size:12px; background:#181b20; padding:6px; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="flex:1; text-align:right; font-weight:bold;">${p1Name1}</span>
-                    <span style="background:#2d2d2d; padding:2px 8px; border-radius:4px; color:var(--accent-color); font-weight:bold; margin:0 8px;">${s1Leg1} / ${s1Leg2}</span>
-                    <span style="flex:1; text-align:left; font-weight:bold;">${p1Name2}</span>
-                </div>
-
-                <div style="font-size:12px; background:#181b20; padding:6px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="flex:1; text-align:right; font-weight:bold;">${p2Name1}</span>
-                    <span style="background:#2d2d2d; padding:2px 8px; border-radius:4px; color:var(--accent-color); font-weight:bold; margin:0 8px;">${s2Leg1} / ${s2Leg2}</span>
-                    <span style="flex:1; text-align:left; font-weight:bold;">${p2Name2}</span>
-                </div>
+            <div style="background:var(--bg-element); padding:8px; border-radius:6px; border-left:3px solid var(--accent-color); margin-bottom:8px;">
+                <h4 style="margin:0 0 6px 0; color:var(--accent-color); font-size:12px; text-align:left; padding-left:2px;">Group ${g}</h4>
+                ${groupMatchesHtml}
             </div>`;
         }).join("");
 
