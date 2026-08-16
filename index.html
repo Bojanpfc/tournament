@@ -25,7 +25,6 @@
             color: var(--accent-color);
             text-align: center;
         }
-        /* Promenjena boja za nazive grupa */
         .group-title {
             color: var(--group-color) !important;
         }
@@ -148,14 +147,12 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        /* Naglašeniji heder tabele */
         th {
             background-color: #2c3e50;
             color: #ffffff;
             font-size: 11px;
             border-bottom: 2px solid var(--accent-color);
         }
-        /* Pozadina za imena igrača */
         td.player-name-cell {
             background-color: #252b33;
             font-weight: bold;
@@ -276,7 +273,6 @@
             border-radius: 6px;
         }
 
-        /* Fullscreen Screenshot Modal Stilovi */
         .ss-fullscreen-modal {
             display: none;
             position: fixed;
@@ -373,7 +369,6 @@
     </div>
 </div>
 
-<!-- Modal Pop-up za unos rezultata -->
 <div id="scoreModal" class="modal">
     <div class="modal-content">
         <h3 style="color:var(--accent-color); margin-top:0;">Set Result</h3>
@@ -387,7 +382,6 @@
     </div>
 </div>
 
-<!-- Screenshot Modal za tabele -->
 <div id="standingsSSModal" class="ss-fullscreen-modal">
     <div class="ss-header">
         <h3 style="margin:0; color:var(--accent-color); font-size:16px;">Group Standings</h3>
@@ -396,7 +390,6 @@
     <div id="ss-standings-content" class="grid"></div>
 </div>
 
-<!-- Screenshot Modal za sve mečeve -->
 <div id="matchesSSModal" class="ss-fullscreen-modal">
     <div class="ss-header">
         <h3 style="margin:0; color:var(--accent-color); font-size:16px;">All Group Matches</h3>
@@ -678,30 +671,41 @@
         let t = allTournaments[currentTournamentId];
         if(!t) return;
 
-        container.innerHTML = Object.keys(t.groups).map(g => {
-            let groupMatchesHtml = '';
-            
-            t.matches[g].forEach((m, mIdx) => {
-                let p1Name = t.groups[g][m.p1].name;
-                let p2Name = t.groups[g][m.p2].name;
-                let sLeg1 = (m.h1 !== "" && m.a1 !== "") ? `${m.h1}:${m.a1}` : "-:-";
-                let sLeg2 = (m.h2 !== "" && m.a2 !== "") ? `${m.h2}:${m.a2}` : "-:-";
+        let groups = Object.keys(t.groups);
+        let roundsHtml = '';
 
-                groupMatchesHtml += `
-                <div style="font-size:10px; background:#181b20; padding:4px 6px; border-radius:4px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="flex:1; text-align:right; font-weight:bold; background:#252b33; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p1Name}</span>
-                    <span style="background:#2d2d2d; padding:2px 6px; border-radius:3px; color:var(--accent-color); font-weight:bold; margin:0 4px; white-space:nowrap;">${sLeg1} | ${sLeg2}</span>
-                    <span style="flex:1; text-align:left; font-weight:bold; background:#252b33; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p2Name}</span>
-                </div>`;
+        // Iteracija kroz runde (0, 1, 2 što odgovara rundama 1, 2, 3)
+        for (let r = 0; r < 3; r++) {
+            let roundBlockHtml = `<div style="background:var(--bg-element); padding:8px; border-radius:6px; border-left:3px solid var(--accent-color); margin-bottom:12px;">`;
+            roundBlockHtml += `<h4 style="margin:0 0 8px 0; color:var(--accent-color); font-size:13px; text-align:center; text-transform:uppercase;">Round ${r + 1}</h4>`;
+
+            // Iteracija kroz sve grupe za tekuću rundu
+            groups.forEach(g => {
+                roundBlockHtml += `<div style="font-size:11px; font-weight:bold; color:var(--group-color); margin:6px 0 2px 2px;">Group ${g}</div>`;
+                
+                // Svaka runda ima 2 meča (indeksi r*2 i r*2 + 1)
+                for (let i = 0; i < 2; i++) {
+                    let mIdx = (r * 2) + i;
+                    let m = t.matches[g][mIdx];
+                    let p1Name = t.groups[g][m.p1].name;
+                    let p2Name = t.groups[g][m.p2].name;
+                    let sLeg1 = (m.h1 !== "" && m.a1 !== "") ? `${m.h1}:${m.a1}` : "-:-";
+                    let sLeg2 = (m.h2 !== "" && m.a2 !== "") ? `${m.h2}:${m.a2}` : "-:-";
+
+                    roundBlockHtml += `
+                    <div style="font-size:10px; background:#181b20; padding:4px 6px; border-radius:4px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="flex:1; text-align:right; font-weight:bold; background:#252b33; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p1Name}</span>
+                        <span style="background:#2d2d2d; padding:2px 6px; border-radius:3px; color:var(--accent-color); font-weight:bold; margin:0 4px; white-space:nowrap;">${sLeg1} | ${sLeg2}</span>
+                        <span style="flex:1; text-align:left; font-weight:bold; background:#252b33; padding:2px 4px; border-radius:3px; overflow:hidden; text-overflow:ellipsis;">${p2Name}</span>
+                    </div>`;
+                }
             });
 
-            return `
-            <div style="background:var(--bg-element); padding:8px; border-radius:6px; border-left:3px solid var(--group-color); margin-bottom:8px;">
-                <h4 class="group-title" style="margin:0 0 6px 0; font-size:12px; text-align:left; padding-left:2px;">Group ${g}</h4>
-                ${groupMatchesHtml}
-            </div>`;
-        }).join("");
+            roundBlockHtml += `</div>`;
+            roundsHtml += roundBlockHtml;
+        }
 
+        container.innerHTML = roundsHtml;
         document.getElementById("matchesSSModal").style.display = "block";
     }
 
