@@ -97,14 +97,6 @@
             background-color: #333;
             color: #fff;
         }
-        .danger-btn {
-            background-color: #ff4d4d;
-            color: #fff;
-            padding: 5px 10px;
-            font-size: 12px;
-            width: auto;
-            display: inline-block;
-        }
         .tournament-item {
             background: #252525;
             padding: 12px;
@@ -154,22 +146,92 @@
             background: #00ffcc;
             color: #121212;
         }
-        .match-card-stacked {
+        
+        /* Novi dizajn kartice meča po uzoru na sliku */
+        .match-card {
             background: #252525;
             padding: 15px;
-            border-radius: 6px;
+            border-radius: 12px;
             margin-bottom: 15px;
             border: 1px solid #333;
+            position: relative;
         }
-        select {
-            background: #333;
+        .match-header {
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .match-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .team-name {
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+            font-size: 14px;
+            word-break: break-word;
+        }
+        .score-box {
+            background: #2d2d2d;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            color: #00ffcc;
+            border: 1px solid #444;
+        }
+        .score-box:hover {
+            border-color: #00ffcc;
+        }
+        .status-badge {
+            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            color: white;
+            margin-top: 8px;
+            text-align: center;
+            display: inline-block;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* Modal za unos rezultata */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #00ffcc;
+            width: 280px;
+        }
+        .modal-content input {
+            width: 50px;
+            padding: 8px;
+            text-align: center;
+            font-size: 18px;
+            background: #2d2d2d;
             color: #fff;
             border: 1px solid #555;
-            padding: 6px;
-            border-radius: 4px;
-            text-align: center;
-            width: 100%;
+            border-radius: 6px;
         }
+
         .bracket-container {
             display: flex;
             justify-content: space-around;
@@ -243,10 +305,25 @@
     </div>
 </div>
 
+<!-- Modal Pop-up za unos rezultata -->
+<div id="scoreModal" class="modal">
+    <div class="modal-content">
+        <h3 style="color:#00ffcc; margin-top:0;">Set Result</h3>
+        <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin: 15px 0;">
+            <input type="number" id="modalH" min="0" placeholder="0">
+            <span style="font-size:20px; font-weight:bold;">:</span>
+            <input type="number" id="modalA" min="0" placeholder="0">
+        </div>
+        <button class="action-btn" onclick="saveModalResult()">Finished</button>
+        <button class="action-btn secondary-btn" style="margin-top:8px;" onclick="closeModal()">Cancel</button>
+    </div>
+</div>
+
 <script>
     let allTournaments = JSON.parse(localStorage.getItem('fc_tournaments') || '{}');
     let currentTournamentId = localStorage.getItem('fc_active_tournament') || null;
     let activeRounds = {};
+    let currentEditingMatch = null;
 
     function initApp() {
         renderTournamentsList();
@@ -315,7 +392,18 @@
         t.groups = {}; t.matches = {};
         groups.forEach((g, i) => {
             t.groups[g] = shuffled.slice(i*4, (i+1)*4).map(name => ({name, played:0, points:0, gf:0, ga:0}));
-            t.matches[g] = [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]].map(p => ({p1:p[0], p2:p[1], h1:"", h2:"", a1:"", a2:"", status:"Pending"}));
+            // Svaki par ima 2 meča: Leg 1 (p1 domacin, p2 gost) i Leg 2 (p2 domacin, p1 gost)
+            t.matches[g] = [
+                [0,1], [2,3],
+                [0,2], [1,3],
+                [0,3], [1,2]
+            ].map(p => ({
+                p1: p[0], p2: p[1],
+                // Meč 1 (Leg 1)
+                h1: "", a1: "", status1: "Pending",
+                // Meč 2 (Leg 2 - obrnuto domacin/gost)
+                h2: "", a2: "", status2: "Pending"
+            }));
             activeRounds[g] = 0;
         });
         saveToLocalStorage(); loadTournamentDataToUI();
@@ -346,27 +434,48 @@
         let t = allTournaments[currentTournamentId];
         Object.keys(t.groups).forEach(g => {
             let card = document.createElement("div");
-            card.className = "match-card-stacked";
+            card.style.background = "#1e1e1e";
+            card.style.padding = "12px";
+            card.style.borderRadius = "8px";
+            card.style.marginBottom = "15px";
+
             let curR = activeRounds[g] || 0;
             let html = `<h3>Group ${g}</h3><div class="round-tabs">${[0,1,2].map(r => `<button class="round-btn ${curR==r?'active':''}" onclick="activeRounds['${g}']= ${r}; renderMatches();">R${r+1}</button>`).join("")}</div>`;
             
             for(let i=0; i<2; i++){
-                let mIdx = (curR*2)+i; let m = t.matches[g][mIdx];
-                let disabled = m.status === "Finished" ? "disabled" : "";
+                let mIdx = (curR*2)+i; 
+                let m = t.matches[g][mIdx];
+                let name1 = t.groups[g][m.p1].name;
+                let name2 = t.groups[g][m.p2].name;
+
+                let score1Display = (m.h1 !== "" && m.a1 !== "") ? `${m.h1} : ${m.a1}` : "- : -";
+                let score2Display = (m.h2 !== "" && m.a2 !== "") ? `${m.h2} : ${m.a2}` : "- : -";
+                
+                let bg1 = m.status1 === "Finished" ? "#00ffcc" : "#e91e63";
+                let bg2 = m.status2 === "Finished" ? "#00ffcc" : "#e91e63";
+
+                // Prvi meč: Player 1 vs Player 2
                 html += `
-                    <div style="border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
-                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;"><span>${t.groups[g][m.p1].name}</span><span>vs</span><span>${t.groups[g][m.p2].name}</span></div>
-                        <table style="margin-bottom:10px;">
-                            <thead><tr><th>Match</th><th>Home</th><th>Away</th></tr></thead>
-                            <tbody>
-                                <tr><td>Leg 1</td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].h1=this.value; saveToLocalStorage();">${generateOptions(m.h1)}</select></td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].h2=this.value; saveToLocalStorage();">${generateOptions(m.h2)}</select></td></tr>
-                                <tr><td>Leg 2</td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].a1=this.value; saveToLocalStorage();">${generateOptions(m.a1)}</select></td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].a2=this.value; saveToLocalStorage();">${generateOptions(m.a2)}</select></td></tr>
-                            </tbody>
-                        </table>
-                        <select onchange="updateMatchStatus('${g}', ${mIdx}, this.value)">
-                            <option value="Pending" ${m.status!=='Finished'?'selected':''}>Edit / Pending</option>
-                            <option value="Finished" ${m.status==='Finished'?'selected':''}>Finished</option>
-                        </select>
+                    <div class="match-card">
+                        <div class="match-header">Group ${g} - Leg 1</div>
+                        <div class="match-content">
+                            <div class="team-name">${name1}</div>
+                            <div class="score-box" onclick="openModal('${g}', ${mIdx}, 1)">${score1Display}</div>
+                            <div class="team-name">${name2}</div>
+                        </div>
+                        <div style="text-align:center;"><span class="status-badge" style="background:${bg1};">${m.status1}</span></div>
+                    </div>`;
+
+                // Drugi meč (revanš): Player 2 vs Player 1 (obrnuto domaćin/gost)
+                html += `
+                    <div class="match-card">
+                        <div class="match-header">Group ${g} - Leg 2 (Revans)</div>
+                        <div class="match-content">
+                            <div class="team-name">${name2}</div>
+                            <div class="score-box" onclick="openModal('${g}', ${mIdx}, 2)">${score2Display}</div>
+                            <div class="team-name">${name1}</div>
+                        </div>
+                        <div style="text-align:center;"><span class="status-badge" style="background:${bg2};">${m.status2}</span></div>
                     </div>`;
             }
             card.innerHTML = html;
@@ -374,29 +483,74 @@
         });
     }
 
-    function generateOptions(val) {
-        let opts = `<option value="">-</option>`;
-        for(let i=0; i<=10; i++) opts += `<option value="${i}" ${val==i?'selected':''}>${i}</option>`;
-        return opts;
+    function openModal(group, matchIndex, leg) {
+        currentEditingMatch = { group, matchIndex, leg };
+        let m = allTournaments[currentTournamentId].matches[group][matchIndex];
+        
+        document.getElementById('modalH').value = leg === 1 ? m.h1 : m.h2;
+        document.getElementById('modalA').value = leg === 1 ? m.a1 : m.a2;
+        document.getElementById('scoreModal').style.display = 'flex';
     }
 
-    function updateMatchStatus(g, idx, status) {
-        let m = allTournaments[currentTournamentId].matches[g][idx];
-        if(status === "Finished" && (m.h1===""||m.h2===""||m.a1===""||m.a2==="")) { alert("Fill scores!"); renderMatches(); return; }
-        m.status = status;
-        recalculate(g); saveToLocalStorage(); renderStandings(); renderMatches();
+    function closeModal() {
+        document.getElementById('scoreModal').style.display = 'none';
+        currentEditingMatch = null;
+    }
+
+    function saveModalResult() {
+        if (!currentEditingMatch) return;
+        let hVal = document.getElementById('modalH').value;
+        let aVal = document.getElementById('modalA').value;
+
+        if (hVal === "" || aVal === "") {
+            alert("Please enter both scores!");
+            return;
+        }
+
+        let { group, matchIndex, leg } = currentEditingMatch;
+        let m = allTournaments[currentTournamentId].matches[group][matchIndex];
+
+        if (leg === 1) {
+            m.h1 = parseInt(hVal);
+            m.a1 = parseInt(aVal);
+            m.status1 = "Finished";
+        } else {
+            m.h2 = parseInt(hVal);
+            m.a2 = parseInt(aVal);
+            m.status2 = "Finished";
+        }
+
+        recalculate(group);
+        saveToLocalStorage();
+        closeModal();
+        renderStandings();
+        renderMatches();
     }
 
     function recalculate(g) {
         let t = allTournaments[currentTournamentId];
-        t.groups[g].forEach(p => { p.played=0; p.points=0; });
+        t.groups[g].forEach(p => { p.played=0; p.points=0; p.gf=0; p.ga=0; });
+        
         t.matches[g].forEach(m => {
-            if(m.status === "Finished") {
+            // Računanje Leg 1 (p1 je domacin, p2 je gost)
+            if(m.status1 === "Finished") {
                 let p1 = t.groups[g][m.p1], p2 = t.groups[g][m.p2];
-                [ {h:m.h1, a:m.h2}, {h:m.a1, a:m.a2} ].forEach(leg => {
-                    p1.played++; p2.played++;
-                    if(leg.h > leg.a) p1.points+=3; else if(leg.h < leg.a) p2.points+=3; else {p1.points++; p2.points++;}
-                });
+                p1.played++; p2.played++;
+                p1.gf += m.h1; p1.ga += m.a1;
+                p2.gf += m.a1; p2.ga += m.h1;
+                if(m.h1 > m.a1) p1.points += 3;
+                else if(m.h1 < m.a1) p2.points += 3;
+                else { p1.points++; p2.points++; }
+            }
+            // Računanje Leg 2 (p2 je domacin, p1 je gost)
+            if(m.status2 === "Finished") {
+                let p1 = t.groups[g][m.p1], p2 = t.groups[g][m.p2];
+                p2.played++; p1.played++;
+                p2.gf += m.h2; p2.ga += m.a2;
+                p1.gf += m.a2; p1.ga += m.h2;
+                if(m.h2 > m.a2) p2.points += 3;
+                else if(m.h2 < m.a2) p1.points += 3;
+                else { p1.points++; p2.points++; }
             }
         });
     }
