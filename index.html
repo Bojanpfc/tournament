@@ -97,9 +97,6 @@
             background-color: #333;
             color: #fff;
         }
-        .secondary-btn:hover {
-            background-color: #444;
-        }
         .danger-btn {
             background-color: #ff4d4d;
             color: #fff;
@@ -107,10 +104,6 @@
             font-size: 12px;
             width: auto;
             display: inline-block;
-            margin-top: 0;
-        }
-        .danger-btn:hover {
-            background-color: #cc0000;
         }
         .tournament-item {
             background: #252525;
@@ -134,11 +127,12 @@
         }
         th, td {
             border: 1px solid #444;
-            padding: 6px;
+            padding: 8px;
             text-align: center;
         }
         th {
             background-color: #2d2d2d;
+            color: #aaa;
         }
         .round-tabs {
             display: flex;
@@ -162,50 +156,25 @@
         }
         .match-card-stacked {
             background: #252525;
-            padding: 10px;
+            padding: 15px;
             border-radius: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border: 1px solid #333;
-        }
-        .team-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        .team-name {
-            font-weight: bold;
-            font-size: 14px;
-            word-break: break-word;
-            max-width: 65%;
-        }
-        .match-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 8px;
-            padding-top: 6px;
-            border-top: 1px solid #333;
-            font-size: 12px;
-            color: #aaa;
         }
         select {
             background: #333;
             color: #fff;
             border: 1px solid #555;
-            padding: 4px;
+            padding: 6px;
             border-radius: 4px;
             text-align: center;
+            width: 100%;
         }
         .bracket-container {
             display: flex;
             justify-content: space-around;
             flex-wrap: wrap;
             gap: 20px;
-        }
-        .bracket-round {
-            flex: 1;
-            min-width: 200px;
         }
         .bracket-match {
             background: #252525;
@@ -238,56 +207,39 @@
         <button class="nav-tab" onclick="switchTab('bracket')">5. Bracket</button>
     </div>
 
-    <!-- 0. TOURNAMENTS SECTION -->
     <div id="tournaments-section" class="section active">
         <h2>Manage Tournaments</h2>
-        <p>Create a new tournament or select an existing one to work on:</p>
-        
-        <input type="text" id="new-tournament-name" placeholder="Tournament Name (e.g. World Cup 2026)">
+        <input type="text" id="new-tournament-name" placeholder="Tournament Name">
         <button class="action-btn" onclick="createNewTournament()">Create New Tournament</button>
-        
-        <h3 style="margin-top: 25px; text-align: left;">Saved Tournaments:</h3>
-        <div id="tournaments-list-container">
-            <p style="color: #888;">No tournaments created yet.</p>
-        </div>
+        <div id="tournaments-list-container" style="margin-top:20px;"></div>
     </div>
 
-    <!-- 1. SETUP SECTION -->
     <div id="setup-section" class="section">
         <h2>Players Registration</h2>
-        <p>Enter 32 player names, each in a new line:</p>
         <textarea id="players-input" placeholder="Player 1&#10;Player 2&#10;...&#10;Player 32"></textarea>
-        <button class="action-btn" onclick="savePlayers()">Save Players & Go to Draw</button>
-        <button class="action-btn secondary-btn" onclick="loadTestPlayers()">Insert 32 Test Players</button>
+        <button class="action-btn" onclick="savePlayers()">Save Players</button>
     </div>
 
-    <!-- 2. DRAW SECTION -->
     <div id="draw-section" class="section">
         <h2>Group Draw</h2>
-        <p id="draw-status">Players registered: 0 / 32</p>
         <button class="action-btn" onclick="performDraw()">Randomize Groups (A - H)</button>
         <div id="groups-draw-preview" class="grid" style="margin-top: 20px;"></div>
     </div>
 
-    <!-- 3. STANDINGS SECTION -->
     <div id="standings-section" class="section">
         <h2>Group Standings</h2>
         <div class="grid" id="standings-container"></div>
     </div>
 
-    <!-- 4. MATCHES SECTION -->
     <div id="matches-section" class="section">
-        <h2>Group Matches & Results (Home & Away)</h2>
+        <h2>Group Matches</h2>
         <div id="matches-container"></div>
     </div>
 
-    <!-- 5. BRACKET SECTION -->
     <div id="bracket-section" class="section">
-        <h2>Knockout Stage (Playoffs)</h2>
-        <button class="action-btn" onclick="generateBracket()" style="margin-bottom: 20px;">Generate Bracket from Standings</button>
-        <div class="bracket-container" id="bracket-container">
-            <p style="text-align: center; color: #888;">Complete group matches and click generate.</p>
-        </div>
+        <h2>Knockout Stage</h2>
+        <button class="action-btn" onclick="generateBracket()">Generate Bracket</button>
+        <div class="bracket-container" id="bracket-container" style="margin-top:20px;"></div>
     </div>
 </div>
 
@@ -301,48 +253,23 @@
         if (currentTournamentId && allTournaments[currentTournamentId]) {
             document.getElementById("active-name-display").innerText = currentTournamentId;
             loadTournamentDataToUI();
-        } else {
-            currentTournamentId = null;
-            document.getElementById("active-name-display").innerText = "None selected";
         }
     }
 
     function switchTab(tabName) {
-        if (tabName !== 'tournaments' && !currentTournamentId) {
-            alert("Please select or create a tournament first!");
-            return;
-        }
+        if (tabName !== 'tournaments' && !currentTournamentId) { alert("Select a tournament first!"); return; }
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
         document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-        
         document.getElementById(tabName + '-section').classList.add('active');
-        
-        let tabs = document.querySelectorAll('.nav-tab');
         let map = {'tournaments': 0, 'setup': 1, 'draw': 2, 'standings': 3, 'matches': 4, 'bracket': 5};
-        if(map[tabName] !== undefined) {
-            tabs[map[tabName]].classList.add('active');
-        }
+        document.querySelectorAll('.nav-tab')[map[tabName]].classList.add('active');
     }
 
     function createNewTournament() {
         let name = document.getElementById("new-tournament-name").value.trim();
-        if (!name) {
-            alert("Please enter a tournament name!");
-            return;
-        }
-        if (allTournaments[name]) {
-            alert("A tournament with this name already exists!");
-            return;
-        }
-
-        allTournaments[name] = {
-            players: [],
-            groups: {},
-            matches: {}
-        };
-
+        if (!name || allTournaments[name]) { alert("Invalid or existing name!"); return; }
+        allTournaments[name] = { players: [], groups: {}, matches: {} };
         saveToLocalStorage();
-        document.getElementById("new-tournament-name").value = "";
         selectTournament(name);
         switchTab('setup');
     }
@@ -355,411 +282,138 @@
         renderTournamentsList();
     }
 
-    function deleteTournament(name, event) {
-        event.stopPropagation();
-        if (confirm("Are you sure you want to delete tournament '" + name + "'?")) {
-            delete allTournaments[name];
-            if (currentTournamentId === name) {
-                currentTournamentId = null;
-                localStorage.removeItem('fc_active_tournament');
-                document.getElementById("active-name-display").innerText = "None selected";
-            }
-            saveToLocalStorage();
-            renderTournamentsList();
-        }
-    }
-
     function renderTournamentsList() {
         let container = document.getElementById("tournaments-list-container");
-        let keys = Object.keys(allTournaments);
-        
-        if (keys.length === 0) {
-            container.innerHTML = "<p style='color: #888;'>No tournaments created yet.</p>";
-            return;
-        }
-
-        let html = "";
-        keys.forEach(name => {
-            let activeStyle = name === currentTournamentId ? "border: 2px solid #00ffcc;" : "";
-            html += `<div class="tournament-item" style="${activeStyle}" onclick="selectTournament('${name}'); switchTab('setup');">
-                <div>
-                    <b>${name}</b><br>
-                    <small style="color: #888;">Players: ${allTournaments[name].players.length} / 32</small>
-                </div>
-                <div>
-                    <button class="action-btn" style="padding: 5px 10px; font-size: 12px; display:inline-block; margin-top:0; margin-right:5px;" onclick="selectTournament('${name}'); switchTab('setup'); event.stopPropagation();">Open</button>
-                    <button class="action-btn danger-btn" onclick="deleteTournament('${name}', event)">Delete</button>
-                </div>
-            </div>`;
-        });
-        container.innerHTML = html;
+        container.innerHTML = Object.keys(allTournaments).map(name => `
+            <div class="tournament-item">
+                <b>${name}</b>
+                <button class="action-btn" style="width:auto; margin:0;" onclick="selectTournament('${name}')">Open</button>
+            </div>`).join("");
     }
 
-    function saveToLocalStorage() {
-        localStorage.setItem('fc_tournaments', JSON.stringify(allTournaments));
-    }
+    function saveToLocalStorage() { localStorage.setItem('fc_tournaments', JSON.stringify(allTournaments)); }
 
     function loadTournamentDataToUI() {
-        if (!currentTournamentId || !allTournaments[currentTournamentId]) return;
+        if (!currentTournamentId) return;
         let t = allTournaments[currentTournamentId];
-
         document.getElementById("players-input").value = t.players.join("\n");
-        
-        if (t.players.length === 32) {
-            document.getElementById("draw-status").innerText = "Players registered: 32 / 32 (Ready)";
-        } else {
-            document.getElementById("draw-status").innerText = "Players registered: " + t.players.length + " / 32";
-        }
-
-        renderGroupsPreview();
-        renderStandings();
-        renderMatches();
-    }
-
-    function loadTestPlayers() {
-        if (!currentTournamentId) {
-            alert("Select a tournament first!");
-            return;
-        }
-        let text = "";
-        for (let i = 1; i <= 32; i++) {
-            text += "Player " + i + "\n";
-        }
-        document.getElementById("players-input").value = text.trim();
+        renderGroupsPreview(); renderStandings(); renderMatches();
     }
 
     function savePlayers() {
-        if (!currentTournamentId) {
-            alert("Select a tournament first!");
-            return;
-        }
-        let val = document.getElementById("players-input").value.trim();
-        let list = val.split("\n").map(s => s.trim()).filter(s => s !== "");
-
-        if (list.length !== 32) {
-            alert("You must enter exactly 32 players! Current count: " + list.length);
-            return;
-        }
-
+        let list = document.getElementById("players-input").value.trim().split("\n").filter(s => s.trim() !== "");
+        if (list.length !== 32) { alert("Need exactly 32 players!"); return; }
         allTournaments[currentTournamentId].players = list;
         saveToLocalStorage();
-        document.getElementById("draw-status").innerText = "Players registered: 32 / 32 (Ready)";
-        renderTournamentsList();
         switchTab('draw');
-    }
-
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
     }
 
     function performDraw() {
         let t = allTournaments[currentTournamentId];
-        if (!t || t.players.length !== 32) {
-            alert("Please save 32 players first!");
-            switchTab('setup');
-            return;
-        }
-
-        let shuffled = shuffle([...t.players]);
-        let groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-        t.groups = {};
-        t.matches = {};
-
-        for (let i = 0; i < 8; i++) {
-            let gName = groupNames[i];
-            t.groups[gName] = shuffled.slice(i * 4, (i + 1) * 4).map(name => ({
-                name: name,
-                played: 0,
-                points: 0,
-                gf: 0,
-                ga: 0
-            }));
-
-            let pairs = [
-                [0,1], [2,3],
-                [0,2], [1,3],
-                [0,3], [1,2]
-            ];
-
-            t.matches[gName] = pairs.map(p => ({
-                p1: p[0], 
-                p2: p[1], 
-                h1: "", h2: "",
-                a1: "", a2: "",
-                status: "Pending" // "Pending" ili "Finished"
-            }));
-            
-            activeRounds[gName] = 0;
-        }
-
-        saveToLocalStorage();
-        loadTournamentDataToUI();
-        alert("Draw completed! Home & Away matches generated.");
+        let shuffled = [...t.players].sort(() => Math.random() - 0.5);
+        let groups = ['A','B','C','D','E','F','G','H'];
+        t.groups = {}; t.matches = {};
+        groups.forEach((g, i) => {
+            t.groups[g] = shuffled.slice(i*4, (i+1)*4).map(name => ({name, played:0, points:0, gf:0, ga:0}));
+            t.matches[g] = [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]].map(p => ({p1:p[0], p2:p[1], h1:"", h2:"", a1:"", a2:"", status:"Pending"}));
+            activeRounds[g] = 0;
+        });
+        saveToLocalStorage(); loadTournamentDataToUI();
     }
 
     function renderGroupsPreview() {
         let container = document.getElementById("groups-draw-preview");
-        container.innerHTML = "";
-        let groups = allTournaments[currentTournamentId]?.groups || {};
-        
-        for (let g in groups) {
-            let div = document.createElement("div");
-            div.style.background = "#252525";
-            div.style.padding = "10px";
-            div.style.borderRadius = "6px";
-            let html = `<h3>Group ${g}</h3><ul>`;
-            groups[g].forEach(p => {
-                html += `<li>${p.name}</li>`;
-            });
-            html += `</ul>`;
-            div.innerHTML = html;
-            container.appendChild(div);
-        }
-    }
-
-    function getSortedGroup(groupName) {
-        let groups = allTournaments[currentTournamentId]?.groups || {};
-        return [...(groups[groupName] || [])].sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            let diffA = a.gf - a.ga;
-            let diffB = b.gf - b.ga;
-            if (diffB !== diffA) return diffB - diffA;
-            return b.gf - a.gf;
-        });
+        container.innerHTML = Object.keys(allTournaments[currentTournamentId].groups).map(g => `
+            <div style="background:#252525; padding:10px; border-radius:6px;">
+                <h3>Group ${g}</h3><ul>${allTournaments[currentTournamentId].groups[g].map(p => `<li>${p.name}</li>`).join("")}</ul>
+            </div>`).join("");
     }
 
     function renderStandings() {
         let container = document.getElementById("standings-container");
-        container.innerHTML = "";
-        let groups = allTournaments[currentTournamentId]?.groups || {};
-        
-        if (Object.keys(groups).length === 0) {
-            container.innerHTML = "<p>Perform draw first.</p>";
-            return;
-        }
-
-        for (let g in groups) {
-            let card = document.createElement("div");
-            card.style.background = "#252525";
-            card.style.padding = "10px";
-            card.style.borderRadius = "6px";
-
-            let sorted = getSortedGroup(g);
-            let html = `<h3>Group ${g}</h3><table>
-                <thead><tr><th>Player</th><th>P</th><th>Pts</th><th>GF</th><th>GA</th></tr></thead><tbody>`;
-            
-            sorted.forEach((p, idx) => {
-                let rowClass = idx < 2 ? "top-two" : "";
-                html += `<tr class="${rowClass}">
-                    <td style="text-align:left;">${p.name}</td>
-                    <td>${p.played}</td>
-                    <td><b>${p.points}</b></td>
-                    <td>${p.gf}</td>
-                    <td>${p.ga}</td>
-                </tr>`;
-            });
-            html += `</tbody></table>`;
-            card.innerHTML = html;
-            container.appendChild(card);
-        }
+        container.innerHTML = Object.keys(allTournaments[currentTournamentId].groups).map(g => `
+            <div style="background:#252525; padding:10px; border-radius:6px;">
+                <h3>Group ${g}</h3>
+                <table><tr><th>Player</th><th>P</th><th>Pts</th></tr>
+                ${allTournaments[currentTournamentId].groups[g].sort((a,b)=>b.points-a.points).map(p => `<tr><td>${p.name}</td><td>${p.played}</td><td>${p.points}</td></tr>`).join("")}
+                </table>
+            </div>`).join("");
     }
 
     function renderMatches() {
         let container = document.getElementById("matches-container");
         container.innerHTML = "";
         let t = allTournaments[currentTournamentId];
-        if (!t || !t.groups || Object.keys(t.groups).length === 0) {
-            container.innerHTML = "<p>Perform draw first.</p>";
-            return;
-        }
-
-        for (let g in t.groups) {
+        Object.keys(t.groups).forEach(g => {
             let card = document.createElement("div");
-            card.style.background = "#252525";
-            card.style.padding = "12px";
-            card.style.borderRadius = "6px";
-            card.style.marginBottom = "15px";
-
-            let currentR = activeRounds[g] !== undefined ? activeRounds[g] : 0;
-            let html = `<h3>Group ${g}</h3>`;
+            card.className = "match-card-stacked";
+            let curR = activeRounds[g] || 0;
+            let html = `<h3>Group ${g}</h3><div class="round-tabs">${[0,1,2].map(r => `<button class="round-btn ${curR==r?'active':''}" onclick="activeRounds['${g}']= ${r}; renderMatches();">R${r+1}</button>`).join("")}</div>`;
             
-            // Round tabs
-            html += `<div class="round-tabs">`;
-            for (let r = 0; r < 3; r++) {
-                let activeClass = currentR === r ? "active" : "";
-                html += `<button class="round-btn ${activeClass}" onclick="setGroupRound('${g}', ${r})">R${r + 1}</button>`;
-            }
-            html += `</div>`;
-
-            // 2 matches per round
-            for (let i = 0; i < 2; i++) {
-                let mIdx = (currentR * 2) + i;
-                let m = t.matches[g][mIdx];
-                let p1Name = t.groups[g][m.p1].name;
-                let p2Name = t.groups[g][m.p2].name;
-                let isFinished = m.status === "Finished";
-                let disabledAttr = isFinished ? "disabled" : "";
-
+            for(let i=0; i<2; i++){
+                let mIdx = (curR*2)+i; let m = t.matches[g][mIdx];
+                let disabled = m.status === "Finished" ? "disabled" : "";
                 html += `
-                    <div class="match-card-stacked">
-                        <!-- Player 1 row -->
-                        <div class="team-row">
-                            <span class="team-name">${p1Name}</span>
-                            <div style="display: flex; gap: 8px;">
-                                <span style="font-size:11px; color:#888; align-self:center;">H:</span>
-                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'h1', this.value)">${generateOptions(m.h1)}</select>
-                                <span style="font-size:11px; color:#888; align-self:center;">A:</span>
-                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'a1', this.value)">${generateOptions(m.a1)}</select>
-                            </div>
-                        </div>
-                        <!-- Player 2 row -->
-                        <div class="team-row">
-                            <span class="team-name">${p2Name}</span>
-                            <div style="display: flex; gap: 8px;">
-                                <span style="font-size:11px; color:#888; align-self:center;">H:</span>
-                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'h2', this.value)">${generateOptions(m.h2)}</select>
-                                <span style="font-size:11px; color:#888; align-self:center;">A:</span>
-                                <select ${disabledAttr} onchange="tempStoreScore('${g}', ${mIdx}, 'a2', this.value)">${generateOptions(m.a2)}</select>
-                            </div>
-                        </div>
-                        <!-- Controls: Status dropdown (Pending/Finished) -->
-                        <div class="match-controls">
-                            <span>Leg 1 & Leg 2</span>
-                            <div style="display:flex; gap:5px; align-items:center;">
-                                <select style="padding:2px 6px; font-size:12px;" onchange="updateMatchStatus('${g}', ${mIdx}, this.value)">
-                                    <option value="Pending" ${!isFinished ? 'selected' : ''}>Edit / Pending</option>
-                                    <option value="Finished" ${isFinished ? 'selected' : ''}>Finished</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div style="border-bottom:1px solid #444; padding-bottom:10px; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;"><span>${t.groups[g][m.p1].name}</span><span>vs</span><span>${t.groups[g][m.p2].name}</span></div>
+                        <table style="margin-bottom:10px;">
+                            <thead><tr><th>Match</th><th>Home</th><th>Away</th></tr></thead>
+                            <tbody>
+                                <tr><td>Leg 1</td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].h1=this.value; saveToLocalStorage();">${generateOptions(m.h1)}</select></td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].h2=this.value; saveToLocalStorage();">${generateOptions(m.h2)}</select></td></tr>
+                                <tr><td>Leg 2</td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].a1=this.value; saveToLocalStorage();">${generateOptions(m.a1)}</select></td><td><select ${disabled} onchange="t.matches['${g}'][${mIdx}].a2=this.value; saveToLocalStorage();">${generateOptions(m.a2)}</select></td></tr>
+                            </tbody>
+                        </table>
+                        <select onchange="updateMatchStatus('${g}', ${mIdx}, this.value)">
+                            <option value="Pending" ${m.status!=='Finished'?'selected':''}>Edit / Pending</option>
+                            <option value="Finished" ${m.status==='Finished'?'selected':''}>Finished</option>
+                        </select>
                     </div>`;
             }
-
             card.innerHTML = html;
             container.appendChild(card);
-        }
-    }
-
-    function setGroupRound(group, round) {
-        activeRounds[group] = round;
-        renderMatches();
+        });
     }
 
     function generateOptions(val) {
-        let opts = `<option value="" ${val===""?"selected":""}>-</option>`;
-        for(let i = 0; i <= 10; i++) {
-            let sel = (val !== "" && val === i) ? "selected" : "";
-            opts += `<option value="${i}" ${sel}>${i}</option>`;
-        }
+        let opts = `<option value="">-</option>`;
+        for(let i=0; i<=10; i++) opts += `<option value="${i}" ${val==i?'selected':''}>${i}</option>`;
         return opts;
     }
 
-    function tempStoreScore(group, matchIndex, field, value) {
-        let t = allTournaments[currentTournamentId];
-        t.matches[group][matchIndex][field] = value === "" ? "" : parseInt(value);
-        saveToLocalStorage();
+    function updateMatchStatus(g, idx, status) {
+        let m = allTournaments[currentTournamentId].matches[g][idx];
+        if(status === "Finished" && (m.h1===""||m.h2===""||m.a1===""||m.a2==="")) { alert("Fill scores!"); renderMatches(); return; }
+        m.status = status;
+        recalculate(g); saveToLocalStorage(); renderStandings(); renderMatches();
     }
 
-    function updateMatchStatus(group, matchIndex, status) {
+    function recalculate(g) {
         let t = allTournaments[currentTournamentId];
-        let m = t.matches[group][matchIndex];
-
-        if (status === "Finished") {
-            if (m.h1 === "" || m.h2 === "" || m.a1 === "" || m.a2 === "") {
-                alert("Please fill in all scores before setting to Finished!");
-                renderMatches(); // Vraća na staru opciju
-                return;
-            }
-            m.status = "Finished";
-        } else {
-            m.status = "Pending";
-        }
-
-        recalculateGroup(group);
-        saveToLocalStorage();
-        renderStandings();
-        renderMatches();
-    }
-
-    function recalculateGroup(group) {
-        let t = allTournaments[currentTournamentId];
-        t.groups[group].forEach(p => {
-            p.played = 0;
-            p.points = 0;
-            p.gf = 0;
-            p.ga = 0;
-        });
-
-        t.matches[group].forEach(m => {
-            if (m.status === "Finished") {
-                let p1 = t.groups[group][m.p1];
-                let p2 = t.groups[group][m.p2];
-
-                // Meč 1 (Player 1 Home vs Player 2 Away)
-                p1.played++;
-                p2.played++;
-                p1.gf += m.h1;
-                p1.ga += m.h2;
-                p2.gf += m.h2;
-                p2.ga += m.h1;
-
-                if (m.h1 > m.h2) p1.points += 3;
-                else if (m.h1 < m.h2) p2.points += 3;
-                else { p1.points += 1; p2.points += 1; }
-
-                // Meč 2 (Player 2 Home vs Player 1 Away - revanš)
-                p1.played++;
-                p2.played++;
-                p1.gf += m.a1;
-                p1.ga += m.a2;
-                p2.gf += m.a2;
-                p2.ga += m.a1;
-
-                if (m.a1 > m.a2) p1.points += 3;
-                else if (m.a1 < m.a2) p2.points += 3;
-                else { p1.points += 1; p2.points += 1; }
+        t.groups[g].forEach(p => { p.played=0; p.points=0; });
+        t.matches[g].forEach(m => {
+            if(m.status === "Finished") {
+                let p1 = t.groups[g][m.p1], p2 = t.groups[g][m.p2];
+                [ {h:m.h1, a:m.h2}, {h:m.a1, a:m.a2} ].forEach(leg => {
+                    p1.played++; p2.played++;
+                    if(leg.h > leg.a) p1.points+=3; else if(leg.h < leg.a) p2.points+=3; else {p1.points++; p2.points++;}
+                });
             }
         });
     }
 
     function generateBracket() {
         let t = allTournaments[currentTournamentId];
-        if (!t || !t.groups || Object.keys(t.groups).length === 0) {
-            alert("No groups found!");
-            return;
+        let groups = Object.keys(t.groups);
+        let html = "<h3>Round of 16</h3>";
+        for(let i=0; i<groups.length; i+=2) {
+            let p1 = t.groups[groups[i]].sort((a,b)=>b.points-a.points)[0].name;
+            let p2 = t.groups[groups[i+1]].sort((a,b)=>b.points-a.points)[1].name;
+            html += `<div class="bracket-match"><b>${p1}</b> vs <b>${p2}</b></div>`;
         }
-
-        let roundOf16 = [];
-        let groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-
-        for (let i = 0; i < groupNames.length; i += 2) {
-            let g1 = groupNames[i];
-            let g2 = groupNames[i+1];
-
-            let p1 = getSortedGroup(g1);
-            let p2 = getSortedGroup(g2);
-
-            roundOf16.push({ t1: p1[0].name + ` (1st ${g1})`, t2: p2[1].name + ` (2nd ${g2})` });
-            roundOf16.push({ t1: p2[0].name + ` (1st ${g2})`, t2: p1[1].name + ` (2nd ${g1})` });
-        }
-
-        let container = document.getElementById("bracket-container");
-        let html = `<div class="bracket-round"><h3>Round of 16</h3>`;
-        roundOf16.forEach((m, idx) => {
-            html += `<div class="bracket-match">Match ${idx+1}<br><b>${m.t1}</b><br>vs<br><b>${m.t2}</b></div>`;
-        });
-        html += `</div>`;
-
-        container.innerHTML = html;
-        switchTab('bracket');
+        document.getElementById("bracket-container").innerHTML = html;
     }
 
     initApp();
 </script>
-
 </body>
 </html>
