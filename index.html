@@ -148,21 +148,38 @@
             font-size: 11px;
             border-bottom: 2px solid var(--accent-color);
         }
-        td.player-name-cell {
-            background-color: #252b33;
+
+        /* Stilovi inspirisani slikom za tabele */
+        .pos-cell {
             font-weight: bold;
-            text-align: left;
-            padding-left: 6px;
+            background-color: #252b33;
             color: #fff;
         }
+        .pos-1, .pos-2 {
+            background-color: var(--group-color) !important;
+            color: #121212 !important;
+            font-weight: bold;
+        }
+        .club-cell {
+            text-align: left;
+            padding-left: 6px;
+            font-weight: bold;
+            background-color: #252b33;
+            color: #fff;
+        }
+        .row-qualified .club-cell {
+            background-color: #1a4a43;
+            border-left: 3px solid var(--accent-color);
+        }
 
-        th:nth-child(1), td:nth-child(1) { width: 34%; }
-        th:nth-child(2), td:nth-child(2) { width: 8%; }
-        th:nth-child(3), td:nth-child(3) { width: 8%; }
-        th:nth-child(4), td:nth-child(4) { width: 8%; }
-        th:nth-child(5), td:nth-child(5) { width: 8%; }
-        th:nth-child(6), td:nth-child(6) { width: 16%; }
-        th:nth-child(7), td:nth-child(7) { width: 18%; font-weight: bold; color: var(--accent-color); }
+        th:nth-child(1), td:nth-child(1) { width: 10%; } /* POS */
+        th:nth-child(2), td:nth-child(2) { width: 38%; } /* CLUB */
+        th:nth-child(3), td:nth-child(3) { width: 8%; }  /* P */
+        th:nth-child(4), td:nth-child(4) { width: 8%; }  /* W */
+        th:nth-child(5), td:nth-child(5) { width: 8%; }  /* D */
+        th:nth-child(6), td:nth-child(6) { width: 8%; }  /* L */
+        th:nth-child(7), td:nth-child(7) { width: 10%; } /* GD */
+        th:nth-child(8), td:nth-child(8) { width: 10%; font-weight: bold; color: var(--accent-color); } /* PTS */
 
         .round-tabs {
             display: flex;
@@ -583,6 +600,50 @@
             </div>`).join("");
     }
 
+    function renderStandingsTable(groupKey) {
+        let t = allTournaments[currentTournamentId];
+        let sortedPlayers = [...t.groups[groupKey]].sort((a,b) => {
+            if(b.points !== a.points) return b.points - a.points;
+            let gdB = (b.gf - b.ga);
+            let gdA = (a.gf - a.ga);
+            if(gdB !== gdA) return gdB - gdA;
+            return b.gf - a.gf;
+        });
+
+        return `
+        <div style="background:var(--bg-element); padding:10px; border-radius:8px;">
+            <h3 class="group-title">Group ${groupKey}</h3>
+            <table>
+                <tr>
+                    <th>POS</th>
+                    <th>CLUB</th>
+                    <th>P</th>
+                    <th>W</th>
+                    <th>D</th>
+                    <th>L</th>
+                    <th>GD</th>
+                    <th>PTS</th>
+                </tr>
+                ${sortedPlayers.map((p, idx) => {
+                    let gd = p.gf - p.ga;
+                    let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
+                    let posClass = idx === 0 ? 'pos-1' : (idx === 1 ? 'pos-2' : 'pos-cell');
+                    let rowClass = idx < 2 ? 'row-qualified' : '';
+                    return `<tr class="${rowClass}">
+                        <td class="${posClass}">${idx + 1}</td>
+                        <td class="club-cell">${p.name}</td>
+                        <td>${p.played}</td>
+                        <td>${p.won}</td>
+                        <td>${p.drawn}</td>
+                        <td>${p.lost}</td>
+                        <td>${gdStr}</td>
+                        <td style="font-weight:bold; color:var(--accent-color);">${p.points}</td>
+                    </tr>`;
+                }).join("")}
+            </table>
+        </div>`;
+    }
+
     function renderStandings() {
         let container = document.getElementById("standings-container");
         if(!container) return;
@@ -591,44 +652,7 @@
             container.innerHTML = "<p style='color:#888; text-align:center;'>Tournament has no groups yet. Go to Setup and Draw tabs.</p>";
             return;
         }
-        container.innerHTML = Object.keys(t.groups).map(g => {
-            let sortedPlayers = [...t.groups[g]].sort((a,b) => {
-                if(b.points !== a.points) return b.points - a.points;
-                let gdB = (b.gf - b.ga);
-                let gdA = (a.gf - a.ga);
-                if(gdB !== gdA) return gdB - gdA;
-                return b.gf - a.gf;
-            });
-
-            return `
-            <div style="background:var(--bg-element); padding:10px; border-radius:8px;">
-                <h3 class="group-title">Group ${g}</h3>
-                <table>
-                    <tr>
-                        <th>Player</th>
-                        <th>P</th>
-                        <th>W</th>
-                        <th>D</th>
-                        <th>L</th>
-                        <th>GD</th>
-                        <th>Pts</th>
-                    </tr>
-                    ${sortedPlayers.map(p => {
-                        let gd = p.gf - p.ga;
-                        let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
-                        return `<tr>
-                            <td class="player-name-cell">${p.name}</td>
-                            <td>${p.played}</td>
-                            <td>${p.won}</td>
-                            <td>${p.drawn}</td>
-                            <td>${p.lost}</td>
-                            <td>${gdStr}</td>
-                            <td style="font-weight:bold; color:var(--accent-color);">${p.points}</td>
-                        </tr>`;
-                    }).join("")}
-                </table>
-            </div>`;
-        }).join("");
+        container.innerHTML = Object.keys(t.groups).map(g => renderStandingsTable(g)).join("");
     }
 
     function renderMatches() {
@@ -695,32 +719,7 @@
         let t = allTournaments[currentTournamentId];
         if(!t || !t.groups) return;
 
-        container.innerHTML = Object.keys(t.groups).map(g => {
-            let sortedPlayers = [...t.groups[g]].sort((a,b) => {
-                if(b.points !== a.points) return b.points - a.points;
-                let gdB = (b.gf - b.ga);
-                let gdA = (a.gf - a.ga);
-                if(gdB !== gdA) return gdB - gdA;
-                return b.gf - a.gf;
-            });
-
-            return `
-            <div style="background:var(--bg-element); padding:6px; border-radius:6px; border-left:3px solid var(--group-color); margin-bottom:6px;">
-                <h4 class="group-title" style="margin:2px 0 4px 0; font-size:13px; text-align:left; padding-left:4px;">Group ${g}</h4>
-                <table style="font-size:10px;">
-                    <tr><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>
-                    ${sortedPlayers.map(p => {
-                        let gd = p.gf - p.ga;
-                        let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
-                        return `<tr>
-                            <td class="player-name-cell">${p.name}</td><td>${p.played}</td><td>${p.won}</td><td>${p.drawn}</td><td>${p.lost}</td><td>${gdStr}</td>
-                            <td style="font-weight:bold; color:var(--accent-color);">${p.points}</td>
-                        </tr>`;
-                    }).join("")}
-                </table>
-            </div>`;
-        }).join("");
-
+        container.innerHTML = Object.keys(t.groups).map(g => renderStandingsTable(g)).join("");
         document.getElementById("standingsSSModal").style.display = "block";
     }
 
@@ -796,7 +795,6 @@
         let gE = getTop2('E'), gF = getTop2('F');
         let gG = getTop2('G'), gH = getTop2('H');
 
-        // Initialize knockout structure if not present or regenerate
         t.knockout = {
             r16: [
                 { p1: gA[0], p2: gB[1], h1:"", a1:"", h2:"", a2:"" },
@@ -833,41 +831,31 @@
 
         let getWinner = (m) => {
             if(m.h1 === "" || m.a1 === "" || m.h2 === "" || m.a2 === "") return "TBD";
-            let agg1 = Number(m.h1) + Number(m.a2); // p1 home in leg 1, away in leg 2? Or standard h1/a1 & h2/a2
-            // Let's assume h1,a1 is leg 1 (p1 home, p2 away) and h2,a2 is leg 2 (p2 home, p1 away).
-            // Total goals for p1 = m.h1 + m.a2; Total goals for p2 = m.a1 + m.h2;
             let p1Total = Number(m.h1) + Number(m.a2);
             let p2Total = Number(m.a1) + Number(m.h2);
             if(p1Total > p2Total) return m.p1;
             if(p2Total > p1Total) return m.p2;
-            return m.p1; // fallback if tied
+            return m.p1;
         };
 
-        // QF pairings from R16
-        // QF #1: winner R16 #1 vs winner R16 #2
         t.knockout.qf[0].p1 = getWinner(t.knockout.r16[0]);
         t.knockout.qf[0].p2 = getWinner(t.knockout.r16[1]);
 
-        // QF #2: winner R16 #3 vs winner R16 #4
         t.knockout.qf[1].p1 = getWinner(t.knockout.r16[2]);
         t.knockout.qf[1].p2 = getWinner(t.knockout.r16[3]);
 
-        // QF #3: winner R16 #5 vs winner R16 #6
         t.knockout.qf[2].p1 = getWinner(t.knockout.r16[4]);
         t.knockout.qf[2].p2 = getWinner(t.knockout.r16[5]);
 
-        // QF #4: winner R16 #7 vs winner R16 #8
         t.knockout.qf[3].p1 = getWinner(t.knockout.r16[6]);
         t.knockout.qf[3].p2 = getWinner(t.knockout.r16[7]);
 
-        // SF pairings from QF
         t.knockout.sf[0].p1 = getWinner(t.knockout.qf[0]);
         t.knockout.sf[0].p2 = getWinner(t.knockout.qf[1]);
 
         t.knockout.sf[1].p1 = getWinner(t.knockout.qf[2]);
         t.knockout.sf[1].p2 = getWinner(t.knockout.qf[3]);
 
-        // Final from SF
         t.knockout.final[0].p1 = getWinner(t.knockout.sf[0]);
         t.knockout.final[0].p2 = getWinner(t.knockout.sf[1]);
     }
