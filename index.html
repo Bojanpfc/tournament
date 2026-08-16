@@ -65,7 +65,7 @@
             border-bottom: 2px solid var(--accent-color);
         }
         .nav-tab.hidden {
-            display: none;
+            display: none !important;
         }
         .section {
             display: none;
@@ -409,11 +409,20 @@
         if (currentTournamentId && allTournaments[currentTournamentId]) {
             document.getElementById("active-name-display").innerText = currentTournamentId;
             loadTournamentDataToUI();
-            document.getElementById("tab-setup").classList.add("hidden");
-            document.getElementById("tab-draw").classList.add("hidden");
             
-            let savedTab = localStorage.getItem('fc_active_tab') || 'standings';
-            switchTab(savedTab, false);
+            let t = allTournaments[currentTournamentId];
+            let hasGroups = t.groups && Object.keys(t.groups).length > 0;
+
+            if (!hasGroups) {
+                document.getElementById("tab-setup").classList.remove("hidden");
+                document.getElementById("tab-draw").classList.remove("hidden");
+                switchTab('setup', false);
+            } else {
+                document.getElementById("tab-setup").classList.add("hidden");
+                document.getElementById("tab-draw").classList.add("hidden");
+                let savedTab = localStorage.getItem('fc_active_tab') || 'standings';
+                switchTab(savedTab, false);
+            }
         } else {
             switchTab('tournaments', false);
         }
@@ -460,9 +469,35 @@
         loadTournamentDataToUI();
         renderTournamentsList();
         
-        document.getElementById("tab-setup").classList.add("hidden");
-        document.getElementById("tab-draw").classList.add("hidden");
-        switchTab('standings');
+        let t = allTournaments[currentTournamentId];
+        let hasGroups = t.groups && Object.keys(t.groups).length > 0;
+
+        if (!hasGroups) {
+            document.getElementById("tab-setup").classList.remove("hidden");
+            document.getElementById("tab-draw").classList.remove("hidden");
+            switchTab('setup');
+        } else {
+            document.getElementById("tab-setup").classList.add("hidden");
+            document.getElementById("tab-draw").classList.add("hidden");
+            switchTab('standings');
+        }
+    }
+
+    function deleteTournament(name, event) {
+        event.stopPropagation();
+        if (confirm(`Are you sure you want to delete tournament "${name}"?`)) {
+            delete allTournaments[name];
+            saveToLocalStorage();
+            if (currentTournamentId === name) {
+                currentTournamentId = null;
+                localStorage.removeItem('fc_active_tournament');
+                document.getElementById("active-name-display").innerText = "None selected";
+            }
+            renderTournamentsList();
+            if (!currentTournamentId) {
+                switchTab('tournaments');
+            }
+        }
     }
 
     function renderTournamentsList() {
@@ -470,7 +505,10 @@
         container.innerHTML = Object.keys(allTournaments).map(name => `
             <div class="tournament-item">
                 <b>${name}</b>
-                <button class="action-btn" style="width:auto; margin:0;" onclick="selectTournament('${name}')">Open</button>
+                <div style="display:flex; gap:6px;">
+                    <button class="action-btn" style="width:auto; margin:0;" onclick="selectTournament('${name}')">Open</button>
+                    <button class="action-btn" style="width:auto; margin:0; background:#e91e63; color:white;" onclick="deleteTournament('${name}', event)">Delete</button>
+                </div>
             </div>`).join("");
     }
 
@@ -523,9 +561,14 @@
     function renderGroupsPreview() {
         let container = document.getElementById("groups-draw-preview");
         if(!container) return;
-        container.innerHTML = Object.keys(allTournaments[currentTournamentId].groups).map(g => `
+        let t = allTournaments[currentTournamentId];
+        if (!t.groups || Object.keys(t.groups).length === 0) {
+            container.innerHTML = "<p style='color:#888; text-align:center;'>No groups drawn yet. Click randomize below.</p>";
+            return;
+        }
+        container.innerHTML = Object.keys(t.groups).map(g => `
             <div style="background:var(--bg-element); padding:10px; border-radius:6px;">
-                <h3 class="group-title">Group ${g}</h3><ul>${allTournaments[currentTournamentId].groups[g].map(p => `<li>${p.name}</li>`).join("")}</ul>
+                <h3 class="group-title">Group ${g}</h3><ul>${t.groups[g].map(p => `<li>${p.name}</li>`).join("")}</ul>
             </div>`).join("");
     }
 
@@ -533,6 +576,10 @@
         let container = document.getElementById("standings-container");
         if(!container) return;
         let t = allTournaments[currentTournamentId];
+        if (!t.groups || Object.keys(t.groups).length === 0) {
+            container.innerHTML = "<p style='color:#888; text-align:center;'>Tournament has no groups yet. Go to Setup and Draw tabs.</p>";
+            return;
+        }
         container.innerHTML = Object.keys(t.groups).map(g => {
             let sortedPlayers = [...t.groups[g]].sort((a,b) => {
                 if(b.points !== a.points) return b.points - a.points;
@@ -578,6 +625,10 @@
         if(!container) return;
         container.innerHTML = "";
         let t = allTournaments[currentTournamentId];
+        if (!t.matches || Object.keys(t.matches).length === 0) {
+            container.innerHTML = "<p style='color:#888; text-align:center;'>No matches generated yet.</p>";
+            return;
+        }
         Object.keys(t.groups).forEach(g => {
             let card = document.createElement("div");
             card.style.background = "var(--bg-card)";
@@ -631,7 +682,7 @@
     function openStandingsSS() {
         let container = document.getElementById("ss-standings-content");
         let t = allTournaments[currentTournamentId];
-        if(!t) return;
+        if(!t || !t.groups) return;
 
         container.innerHTML = Object.keys(t.groups).map(g => {
             let sortedPlayers = [...t.groups[g]].sort((a,b) => {
@@ -669,21 +720,18 @@
     function openMatchesSS() {
         let container = document.getElementById("ss-matches-content");
         let t = allTournaments[currentTournamentId];
-        if(!t) return;
+        if(!t || !t.matches) return;
 
         let groups = Object.keys(t.groups);
         let roundsHtml = '';
 
-        // Iteracija kroz runde (0, 1, 2 što odgovara rundama 1, 2, 3)
         for (let r = 0; r < 3; r++) {
             let roundBlockHtml = `<div style="background:var(--bg-element); padding:8px; border-radius:6px; border-left:3px solid var(--accent-color); margin-bottom:12px;">`;
             roundBlockHtml += `<h4 style="margin:0 0 8px 0; color:var(--accent-color); font-size:13px; text-align:center; text-transform:uppercase;">Round ${r + 1}</h4>`;
 
-            // Iteracija kroz sve grupe za tekuću rundu
             groups.forEach(g => {
                 roundBlockHtml += `<div style="font-size:11px; font-weight:bold; color:var(--group-color); margin:6px 0 2px 2px;">Group ${g}</div>`;
                 
-                // Svaka runda ima 2 meča (indeksi r*2 i r*2 + 1)
                 for (let i = 0; i < 2; i++) {
                     let mIdx = (r * 2) + i;
                     let m = t.matches[g][mIdx];
