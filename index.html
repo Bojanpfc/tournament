@@ -260,6 +260,27 @@
             border-radius: 6px;
         }
 
+        /* Fullscreen Screenshot Modal Stilovi */
+        .ss-fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #0d0f12;
+            z-index: 3000;
+            overflow-y: auto;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .ss-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
         .bracket-container {
             display: flex;
             justify-content: space-around;
@@ -274,58 +295,9 @@
             border-left: 4px solid var(--accent-color);
             font-size: 13px;
         }
-
-        /* Screenshot Mode Stilovi */
-        body.screenshot-mode {
-            background: #0d0f12 !important;
-            padding: 5px !important;
-        }
-        body.screenshot-mode .nav-tabs,
-        body.screenshot-mode .active-tournament-banner,
-        body.screenshot-mode h1,
-        body.screenshot-mode .action-btn,
-        body.screenshot-mode .round-tabs,
-        body.screenshot-mode .status-badge,
-        body.screenshot-mode #screenshot-exit-btn {
-            display: none !important;
-        }
-        body.screenshot-mode .section {
-            display: block !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        body.screenshot-mode .match-card {
-            padding: 8px !important;
-            margin-bottom: 6px !important;
-            background: #181b20 !important;
-        }
-        body.screenshot-mode table {
-            font-size: 12px !important;
-        }
-        .floating-screenshot-exit {
-            display: none;
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #e91e63;
-            color: white;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-weight: bold;
-            z-index: 2000;
-            cursor: pointer;
-        }
-        body.screenshot-mode .floating-screenshot-exit {
-            display: block;
-        }
     </style>
 </head>
 <body>
-
-<button id="screenshot-exit-btn" class="floating-screenshot-exit" onclick="toggleScreenshotMode()">Exit Screenshot Mode</button>
 
 <div class="container">
     <h1>FC Mobile Tournament</h1>
@@ -365,7 +337,7 @@
     <div id="standings-section" class="section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h2 style="margin: 0; flex: 1; text-align: center;">Group Standings</h2>
-            <button class="action-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleScreenshotMode()">Screenshot View</button>
+            <button class="action-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openStandingsSS()">Screenshot View</button>
         </div>
         <div class="grid" id="standings-container"></div>
     </div>
@@ -373,7 +345,7 @@
     <div id="matches-section" class="section">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h2 style="margin: 0; flex: 1; text-align: center;">Group Matches</h2>
-            <button class="action-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="toggleScreenshotMode()">Screenshot View</button>
+            <button class="action-btn" style="width: auto; margin: 0; padding: 6px 12px; font-size: 12px;" onclick="openMatchesSS()">Screenshot View</button>
         </div>
         <div id="matches-container"></div>
     </div>
@@ -397,6 +369,24 @@
         <button class="action-btn" onclick="saveModalResult()">Finished</button>
         <button class="action-btn secondary-btn" style="margin-top:8px;" onclick="closeModal()">Cancel</button>
     </div>
+</div>
+
+<!-- Screenshot Modal za tabele -->
+<div id="standingsSSModal" class="ss-fullscreen-modal">
+    <div class="ss-header">
+        <h3 style="margin:0; color:var(--accent-color);">Standings Overview</h3>
+        <button class="action-btn" style="width:auto; margin:0; padding:6px 14px; font-size:12px; background:#e91e63; color:white;" onclick="closeStandingsSS()">Close</button>
+    </div>
+    <div id="ss-standings-content" class="grid"></div>
+</div>
+
+<!-- Screenshot Modal za mečeve (Runda 1 ili svi mečevi) -->
+<div id="matchesSSModal" class="ss-fullscreen-modal">
+    <div class="ss-header">
+        <h3 style="margin:0; color:var(--accent-color);">Round 1 Matches Overview</h3>
+        <button class="action-btn" style="width:auto; margin:0; padding:6px 14px; font-size:12px; background:#e91e63; color:white;" onclick="closeMatchesSS()">Close</button>
+    </div>
+    <div id="ss-matches-content"></div>
 </div>
 
 <script>
@@ -433,10 +423,6 @@
         if(tabName === 'bracket') {
             checkBracketReady();
         }
-    }
-
-    function toggleScreenshotMode() {
-        document.body.classList.toggle('screenshot-mode');
     }
 
     function createNewTournament() {
@@ -624,6 +610,89 @@
             card.innerHTML = html;
             container.appendChild(card);
         });
+    }
+
+    function openStandingsSS() {
+        let container = document.getElementById("ss-standings-content");
+        let t = allTournaments[currentTournamentId];
+        if(!t) return;
+
+        container.innerHTML = Object.keys(t.groups).map(g => {
+            let sortedPlayers = [...t.groups[g]].sort((a,b) => {
+                if(b.points !== a.points) return b.points - a.points;
+                let gdB = (b.gf - b.ga);
+                let gdA = (a.gf - a.ga);
+                if(gdB !== gdA) return gdB - gdA;
+                return b.gf - a.gf;
+            });
+
+            return `
+            <div style="background:var(--bg-element); padding:8px; border-radius:6px; margin-bottom:10px;">
+                <h4 style="margin:4px 0; color:var(--accent-color);">Group ${g}</h4>
+                <table>
+                    <tr><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>
+                    ${sortedPlayers.map(p => {
+                        let gd = p.gf - p.ga;
+                        let gdStr = gd > 0 ? `+${gd}` : `${gd}`;
+                        return `<tr>
+                            <td>${p.name}</td><td>${p.played}</td><td>${p.won}</td><td>${p.drawn}</td><td>${p.lost}</td><td>${gdStr}</td>
+                            <td style="font-weight:bold; color:var(--accent-color);">${p.points}</td>
+                        </tr>`;
+                    }).join("")}
+                </table>
+            </div>`;
+        }).join("");
+
+        document.getElementById("standingsSSModal").style.display = "block";
+    }
+
+    function closeStandingsSS() {
+        document.getElementById("standingsSSModal").style.display = "none";
+    }
+
+    function openMatchesSS() {
+        let container = document.getElementById("ss-matches-content");
+        let t = allTournaments[currentTournamentId];
+        if(!t) return;
+
+        // Prikazuje mečeve runde 1 za sve grupe (indeks 0 i 1 u nizu mečeva su prvi mečevi prve runde)
+        container.innerHTML = Object.keys(t.groups).map(g => {
+            let m1 = t.matches[g][0];
+            let m2 = t.matches[g][1];
+            
+            let p1Name1 = t.groups[g][m1.p1].name;
+            let p1Name2 = t.groups[g][m1.p2].name;
+            let s1Leg1 = (m1.h1 !== "" && m1.a1 !== "") ? `${m1.h1}:${m1.a1}` : "-:-";
+            let s1Leg2 = (m1.h2 !== "" && m1.a2 !== "") ? `${m1.h2}:${m1.a2}` : "-:-";
+
+            let p2Name1 = t.groups[g][m2.p1].name;
+            let p2Name2 = t.groups[g][m2.p2].name;
+            let s2Leg1 = (m2.h1 !== "" && m2.a1 !== "") ? `${m2.h1}:${m2.a1}` : "-:-";
+            let s2Leg2 = (m2.h2 !== "" && m2.a2 !== "") ? `${m2.h2}:${m2.a2}` : "-:-";
+
+            return `
+            <div style="background:var(--bg-element); padding:10px; border-radius:8px; margin-bottom:10px;">
+                <h4 style="margin:0 0 8px 0; color:var(--accent-color); text-align:center;">Group ${g} - Round 1</h4>
+                
+                <div style="font-size:12px; background:#181b20; padding:6px; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="flex:1; text-align:right; font-weight:bold;">${p1Name1}</span>
+                    <span style="background:#2d2d2d; padding:2px 8px; border-radius:4px; color:var(--accent-color); font-weight:bold; margin:0 8px;">${s1Leg1} / ${s1Leg2}</span>
+                    <span style="flex:1; text-align:left; font-weight:bold;">${p1Name2}</span>
+                </div>
+
+                <div style="font-size:12px; background:#181b20; padding:6px; border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="flex:1; text-align:right; font-weight:bold;">${p2Name1}</span>
+                    <span style="background:#2d2d2d; padding:2px 8px; border-radius:4px; color:var(--accent-color); font-weight:bold; margin:0 8px;">${s2Leg1} / ${s2Leg2}</span>
+                    <span style="flex:1; text-align:left; font-weight:bold;">${p2Name2}</span>
+                </div>
+            </div>`;
+        }).join("");
+
+        document.getElementById("matchesSSModal").style.display = "block";
+    }
+
+    function closeMatchesSS() {
+        document.getElementById("matchesSSModal").style.display = "none";
     }
 
     function openModal(group, matchIndex, leg) {
