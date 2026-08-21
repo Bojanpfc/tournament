@@ -95,9 +95,11 @@ tbody tr:hover{background:#0b1b1e}.pos{font-weight:950;color:var(--green)}
 <header class="topbar">
   <div class="nav">
     <div class="logo"><div class="logoMark">FC</div><div><span class="g">MOBILE</span><span>TOURNAMENT</span><span>HUB</span></div></div>
-    <select id="tournamentSelect" class="tourSelect"></select>
-    <button class="btn primary" onclick="openNewTournament()">+ New Tournament</button>
-    <button class="btn danger" onclick="deleteTournament()">Delete</button>
+    <div class="navActions">
+      <select id="tournamentSelect" class="tourSelect"></select>
+      <button class="btn primary" onclick="openNewTournament()">+ New Tournament</button>
+      <button id="deleteBtn" class="btn danger" onclick="deleteTournament()">Delete</button>
+    </div>
   </div>
 </header>
 
@@ -121,7 +123,7 @@ tbody tr:hover{background:#0b1b1e}.pos{font-weight:950;color:var(--green)}
 </div>
 
 <script>
-const KEY="fc_mobile_tournament_hub_v3";
+const KEY="fc_mobile_tournament_hub_v4";
 let db=loadDB(), currentId=db.currentId||null, activeTab="dashboard";
 
 function loadDB(){
@@ -134,11 +136,19 @@ function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function selected(v){return cur()&&cur().id===v?"selected":""}
 
 function renderNav(){
- const sel=document.getElementById("tournamentSelect");
- sel.innerHTML=db.tournaments.length
- ? db.tournaments.map(t=>`<option value="${t.id}" ${selected(t.id)}>${esc(t.name)}</option>`).join("")
- : `<option>No tournaments</option>`;
- sel.onchange=()=>{currentId=sel.value;db.currentId=currentId;saveDB();activeTab="dashboard";render()}
+ const sel=document.getElementById("tournamentSelect"), del=document.getElementById("deleteBtn");
+ if(!db.tournaments.length){
+   currentId=null; db.currentId=null;
+   sel.innerHTML='<option value="" selected>No tournament created yet</option>';
+   sel.disabled=true; del.disabled=true; del.style.opacity=".45"; del.style.cursor="not-allowed";
+ }else{
+   if(!db.tournaments.some(t=>t.id===currentId)) currentId=db.tournaments[0].id;
+   db.currentId=currentId;
+   sel.disabled=false; sel.innerHTML=db.tournaments.map(t=>`<option value="${t.id}" ${t.id===currentId?"selected":""}>${esc(t.name)}</option>`).join("");
+   del.disabled=false; del.style.opacity="1"; del.style.cursor="pointer";
+ }
+ sel.onchange=()=>{if(!sel.value)return;currentId=sel.value;db.currentId=currentId;saveDB();activeTab="dashboard";render()};
+ saveDB();
 }
 
 function openNewTournament(){
@@ -336,7 +346,7 @@ function buildBracket(force=false){
  if(![4,8,16,32,64,128].includes(total)){alert("Qualified players must total 4, 8, 16, 32, 64 or 128.");return}
  if(force&&!confirm("Rebuild bracket? Existing knockout scores will be removed."))return;
  const qualifiers=[];
- t.groups.forEach((g,i)=>groupStats(t,String.fromCharCode(65+i)).slice(0,t.qualified).forEach((p,rank)=>qualifiers.push({name:p.name,seed:`${String.fromCharCode(65+i)}${rank+1}`}));
+ t.groups.forEach((g,i)=>groupStats(t,String.fromCharCode(65+i)).slice(0,t.qualified).forEach((p,rank)=>qualifiers.push({name:p.name,seed:`${String.fromCharCode(65+i)}${rank+1}`})));
  const n=qualifiers.length, rounds=[];
  for(let r=0;r<Math.log2(n);r++)rounds.push([]);
  const order=[];
